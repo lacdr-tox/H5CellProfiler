@@ -1,0 +1,31 @@
+.row-fluid {
+    padding-left: 275px;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+}
+.row-fluid .span4 { 
+    position: relative;
+    float:left;
+    width: 275px;
+    right: 285px;
+    margin-right: -275px;
+}
+.row-fluid .span8 {
+    float: right;
+    position: relative;
+    padding-left: 10px;
+    padding-right: 10px;
+    width: 100%;
+}
+.well { 
+    padding-left: 15px;
+    padding-right: 15px; 
+    margin-bottom: 0px; 
+    width: auto; 
+}
+textarea, .jslider, select{
+    width: 100%;
+}
+input{
+    width: 230px;
+}
