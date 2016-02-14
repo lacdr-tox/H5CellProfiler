@@ -1,4 +1,5 @@
-
+source("verifyInputFun.R")
+  
 #12 nov 2014 23:00
 mainFunction <- function(  hdf5FileNameL=hdf5FileNameL,locationID=locationID, timeID=timeID, plateID=plateID,
                            imageID=imageID, replID=replID,myFeaturePathsA=myFeaturePathsA, plateMDFileName=plateMDFileName,
@@ -12,8 +13,6 @@ mainFunction <- function(  hdf5FileNameL=hdf5FileNameL,locationID=locationID, ti
 
   
   #h5loop=1
-  source("D:/R_HOME/R_WORK/R scipts/CPHDF5Analysis/verifyInputFun.R")
-   
   hdf5FileName <- hdf5FileNameL[h5loop]
   # metadata can be manualy defined by user per h5 file, or a single or per h5 file a h5 path
   h5L <- length(hdf5FileNameL)
