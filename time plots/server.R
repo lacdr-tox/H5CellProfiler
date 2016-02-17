@@ -1,7 +1,7 @@
 
 # server.R
-source("D:/R_HOME/R_WORK/R scipts/theme_sharp.R")
-source('D:/R_HOME/R_WORK/R scipts/CPHDF5Analysis/time plots/global.R', local=TRUE)
+source("../theme_sharp.R")
+source('global.R', local=TRUE)
 values <- reactiveValues()
 
 ## TODO: multiple features plotten
