@@ -328,7 +328,7 @@ indr<-(piDataL$value>7000)
 Run Block1 first. 
 BLOCK 2: summary statistics & plotting
 ```{r summaryStatistics}
-rm(list=ls())
+rm(list=ls()[ls() != "cp.pipeline.location"])
 options(StringsAsFactors = FALSE)
 library(rhdf5)
 library(ggplot2)
@@ -343,8 +343,8 @@ library(data.table)
 library(shiny)
 library(ggvis)
 
-source("D:/R_HOME/R_WORK/R scipts/theme_sharp.R")
-source("D:/R_HOME/R_WORK/R scipts/CPHDF5Analysis/countCellFun.R")
+source(file.path(cp.pipeline.location, "theme_sharp.R"))
+source(file.path(cp.pipeline.location, "countCellFun.R"))
 
 # use as p + theme_sharp()
 # setwd() 
@@ -423,7 +423,7 @@ if ( !file.exists( summaryStatsDir ))
 
 # time series plot of average of cell population
 
-runApp('D:/R_HOME/R_WORK/R scipts/CPHDF5Analysis/time plots', launch.browser = TRUE )
+runApp(file.path(cp.pipeline.location, 'time plots'), launch.browser = TRUE )
 
 # TODO : 11 aug 2014: bouw alles van plotten block 2 in in shiny applicatie
 # zorg dat het wel met meer checks komt zodat de app niet zomaar kan vastlopen.
@@ -2157,7 +2157,7 @@ options(stringsAsFactors = FALSE)
 ############ user defined variables ##########================
 ############ user defined variables ##########================
 # you only need to set the data paths (does not matter how many):
-rm(list=ls())
+rm(list=ls()[ls() != "cp.pipeline.location"])
 setwd("H:/unilever/replicate plots")
 
 yMax <- FALSE # to zoom in on y axis choose max y-value. Else set to FALSE for default
