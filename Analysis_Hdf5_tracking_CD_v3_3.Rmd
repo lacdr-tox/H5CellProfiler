@@ -92,8 +92,9 @@ options(stringsAsFactors = FALSE)
 dir()
 #load library with methods for reading xls files
 rm(list=ls())
-source("D:/R_HOME/R_WORK/R scipts/CPHDF5Analysis/mainFunction.R")
-source("D:/R_HOME/R_WORK/R scipts/CPHDF5Analysis/fixTrackingFun.R")
+cp.pipeline.location <- '~/H5CellProfiler'
+source(file.path(cp.pipeline.location, "mainFunction.R"), chdir = TRUE)
+source(file.path(cp.pipeline.location, "fixTrackingFun.R"))
 library(rhdf5)
 library(stringr)
 library(plyr)
@@ -106,10 +107,8 @@ library(grid)
 library(shiny)
 library(ggvis)
 
-source("D:/R_HOME/R_WORK/R scipts/theme_sharp.R")
-source("D:/R_HOME/R_WORK/R scipts/CPHDF5Analysis/countCellFun.R")
-
-
+source(file.path(cp.pipeline.location, "theme_sharp.R"))
+source(file.path(cp.pipeline.location, "countCellFun.R"))
 
 #=================user defined variables=================================================================
 #========================================================================================================
@@ -263,7 +262,7 @@ numberCores <- kMyVars$numberCores
 
 
 
-runApp('D:/R_HOME/R_WORK/R scipts/CPHDF5Analysis/time plots', launch.browser = TRUE )
+runApp(file.path(cp.pipeline.location, 'time plots'), launch.browser = TRUE )
 
 
 
@@ -1058,9 +1057,9 @@ Also some options of reconnecting tracks included
 
 
 ```{r}
-rm(list=ls())
+rm(list=ls()[ls() != "cp.pipeline.location"])
 require(stringr)
-source("D:/R_HOME/R_WORK/R scipts/CPHDF5Analysis/fixTrackingFun.R")
+source(file.path(cp.pipeline.location, "fixTrackingFun.R"))
 
 
 dir()
@@ -1309,7 +1308,7 @@ First run block 4, if new session and block 4 was run before, load the reordered
 ```{r }
 options(StringsAsFactors = FALSE)
 #setwd("H:/michiel CP test data/RCM may 2014")
-source("D:/R_HOME/R_WORK/R scipts/theme_sharp.R")
+source(file.path(cp.pipeline.location,"theme_sharp.R"))
 require(plyr)
 require(grid)
 require(GGally)
