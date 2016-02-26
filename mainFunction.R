@@ -87,11 +87,11 @@ mainFunction <- function(  hdf5FileNameL=hdf5FileNameL,locationID=locationID, ti
   
   ind.tr<-grepl("TrackObjects", all.paths)
   all.paths.tr<-all.paths[ ind.tr]
-  # perl "look behind" ?<=
+  # "look behind" ?<=
   rmIndIm<- grepl("Image", all.paths.tr)
   all.paths.tr<-all.paths.tr[!rmIndIm]
-  trackedObject <- unique(str_extract(all.paths.tr, #TODO perl deprecated
-                                      perl('(?<=Measurements/[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2}/)[A-Z a-z _ 0-9]+(?=/)')))
+  trackedObject <- unique(str_extract(all.paths.tr,
+                                      '(?<=Measurements/[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2}/)[A-Z a-z _ 0-9]+(?=/)'))
   
 myFeaturePathsA <- paste( "Measurements", setDateID ,myFeaturePathsA, sep = "/")
   if( !is.character0(trackedObject) ){

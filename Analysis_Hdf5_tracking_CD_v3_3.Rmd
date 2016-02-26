@@ -92,7 +92,7 @@ options(stringsAsFactors = FALSE)
 dir()
 #load library with methods for reading xls files
 rm(list=ls())
-cp.pipeline.location <- '~/H5CellProfiler'
+cp.pipeline.location <- 'D:/h5Cellprofiler/H5CellProfiler'
 source(file.path(cp.pipeline.location, "mainFunction.R"), chdir = TRUE)
 source(file.path(cp.pipeline.location, "fixTrackingFun.R"))
 library(rhdf5)
@@ -121,19 +121,19 @@ source(file.path(cp.pipeline.location, "countCellFun.R"))
 dir()
 
 # Each hdf5 file contains 1 or multiple plate-based data (i.e. do not divide data from 1 plate in multiple h5 files unless different time points)
-hdf5FileNameL <- c("demo.h5") # mainFunction will loop through this vector, at the end rbinding the individual outputs. 
+hdf5FileNameL <- c("2014_05_23_Hs578T RCM.h5") # mainFunction will loop through this vector, at the end rbinding the individual outputs. 
 
 # each hdf5 gets it's own metadata info. Either a path WITH the "Image/" character or a manualy defined string WITHOUT the "/" character
 # If each h5 file has identical metadata 1 entry is sufficient. Else provide entry for each h5 file
 
 # these metadata variables should be defined in metadata layout file if they vary within the h5 file, if not needed in the metadata file (so metadata is provided in these variables) - then put NA's in the metadata file
-locationID <- c("Image/Metadata_locationID")  # well/ location metadata
-plateID <- c( "plate1") # PlateID must always be provided (either manual or h5 paths)- here AND in layout file: becuase plateID is used to couple metadata plate layout file.
-imageID <- c("Image/Metadata_imageNr") # Image/Metadata_  ... image number (obtained from image file name ) 
+locationID <- c("Image/Metadata_Loc")  # well/ location metadata
+plateID <- c( "20140523Hs578T_RCM") # PlateID must always be provided (either manual or h5 paths)- here AND in layout file: becuase plateID is used to couple metadata plate layout file.
+imageID <- c("Image/Metadata_xy") # Image/Metadata_  ... image number (obtained from image file name ) 
 timeID <- c("Image/Metadata_tp") # timeID, either hdf5 path, or vector of numbers according to hdf5 files (each hdf5 is then a time point) So capture time point in h5 file if needed. Or defined in metadata layout file
 replID <- c("") # replicate ID (are the plate replicates of each other? (just easy for plotting options))
-exposureDelay <- c("00:20") # hh:mm 
-timeBetweenFrames <- c("00:21:00") # hh:mm:ss 
+exposureDelay <- c("00:00") # hh:mm 
+timeBetweenFrames <- c("00:06:00") # hh:mm:ss 
 #define the paths of the measurements you are interested in, leave empty if you dont need so many: full full full empty empty empty.....  NOT: full empty full.....
 # this is for measurements: tracking will be handled automatically
 
@@ -141,10 +141,10 @@ timeBetweenFrames <- c("00:21:00") # hh:mm:ss
 # only add the object/feature part for example:  "myObject/Inensity_MeanIntensity_img"
 
 myFeaturePathsA <- list(  #do not define displacement and parent object  - these are automatically included
-firstFeature  = "cells_yfp/Intensity_MeanIntensity_YFP_over_CFP",  # enter a objectpath inside .h5 file to measurement ( there will be one  /  meaning--> object/measurement)
-secondFeature = "Image/Count_Cells_mCherry",
-thirdFeature  = "cells_yfp/AreaShape_Area",
-fourthFeature = "cells_yfp/TrackObjects_DistanceTraveled_50",
+firstFeature  = "Filteredcell/AreaShape_MedianRadius",  # enter a objectpath inside .h5 file to measurement ( there will be one  /  meaning--> object/measurement)
+secondFeature = "Image/Count_Filteredcell",
+thirdFeature  = "Filteredcell/TrackObjects_Displacement_20",
+fourthFeature = "Filteredcell/AreaShape_Area",
 fifthFeature  = "",
 sixthFeature  = "",
 seventhFeature= "",
@@ -153,9 +153,9 @@ ninethFeature = "",
 thenthFeature = "" ) 
   # tab delimted text file with metadata headers:    well  treatment  dose_uM	control	cell_line 
 #the control is 1 or `1 where `1 is a control (just used for some extra coloring in plots)
-plateMDFileName <- "2014_plate_layout.txt"
+plateMDFileName <- "2014_05_23_Hs578T RCM.txt"
 dir()
-parentObject <- "cells_yfp" # the name in hdf5 file of the parent ( as defined in relate objects module in CellProfiler ) if no parent (only 1 object defined in CP for example: then enter the object here)
+parentObject <- "Filteredcell" # the name in hdf5 file of the parent ( as defined in relate objects module in CellProfiler ) if no parent (only 1 object defined in CP for example: then enter the object here)
 
 childObject1 <- "" # First child of parentObject (if a child object was tracked - define this as your tracked object)
 childObject2 <- ""
@@ -171,7 +171,7 @@ oscillation <- FALSE  # TRUE / FALSE  - will extract oscillation related paramet
 
 writeSingleCellDataPerWell <- FALSE # write all single cell data in seperate file per well, takes time
 writeAllSingleCellData<- FALSE  # Only needed of you need the txt file yourselfl writes all single cell data in single txt file.
-numberCores <- 1
+numberCores <- 4
 dir()
 
 
@@ -1286,7 +1286,6 @@ for( i in seq_along(zehFeats)){
 bufferList[[i]] <- allTrackDF[  allTrackDF$.id == zehFeats[i], ][ind,]
 }
 bufferDF <- rbind.fill(bufferList)
-
 
 write.table(bufferDF, file = "reorderedTrackData.txt", sep ="\t", row.names = FALSE)
 write.table(directionality.data, file = "directionality.txt", sep ="\t", row.names= FALSE)
