@@ -26,8 +26,7 @@ countCellFun <- function(kColNames )
   
   print("Calculating min & max parent object counts:")
   #kColNames$ImageCountParentsCN <- "imageCountParentObj"
-  cl<-makeCluster(numberCores)
-  registerDoSNOW(cl)
+  registerDoParallel(cores=numberCores)
   cellNlist <- foreach ( cellC = splitDataL, .packages = "data.table") %dopar% 
 {
   parentCounts <- cellC[ , list(minCountParent = min(
@@ -38,7 +37,6 @@ countCellFun <- function(kColNames )
       mean(get(kColNames$ImageCountParentsCN), na.rm=TRUE), digits= 1)), by = plateWellID]
 }
   
-stopCluster(cl)
 
 cellNlist <- rbindlist(cellNlist)
 write.table(cellNlist,file = "parentObjectCounts.txt", sep ="\t", row.names = FALSE)

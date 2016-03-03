@@ -99,8 +99,7 @@ library(rhdf5)
 library(stringr)
 library(plyr)
 library(data.table)
-library(foreach)
-library(doSNOW)
+library(doParallel)
 library(ggplot2)
 library(reshape2)
 library(grid)
@@ -171,7 +170,7 @@ oscillation <- FALSE  # TRUE / FALSE  - will extract oscillation related paramet
 
 writeSingleCellDataPerWell <- FALSE # write all single cell data in seperate file per well, takes time
 writeAllSingleCellData<- FALSE  # Only needed of you need the txt file yourselfl writes all single cell data in single txt file.
-numberCores <- 4
+numberCores <- min(4, detectCores()) # should be specified after sourcing mainFunction -> weird dependency, should fix
 dir()
 
 
@@ -179,8 +178,7 @@ dir()
 outputList= list()
 # run main function: this could be made parralel but so far speed has not been an issue for this function
 if(length(hdf5FileNameL) > 1) {
-   cl<- makeCluster(min(numberCores, length(hdf5FileNameL)))
-   registerDoSNOW(cl)
+registerDoParallel(min(numberCores, length(hdf5FileNameL)))
 
 outputList<- foreach( h5loop = seq_along(hdf5FileNameL ),
                       .packages = c("rhdf5", "stringr", "data.table")) %dopar% 
@@ -199,7 +197,6 @@ outputList<- foreach( h5loop = seq_along(hdf5FileNameL ),
      timeBetweenFrames=timeBetweenFrames, exposureDelay=exposureDelay 
      )
    }
-stopCluster(cl)
 } else {
   h5loop <- 1
     outputList <- mainFunction( h5loop=h5loop,
@@ -337,8 +334,7 @@ library(stringr)
 library(plyr)
 library(pracma)
 library(grid)
-library(doSNOW)
-library(foreach)
+library(doParallel)
 library(data.table)
 library(shiny)
 library(ggvis)
@@ -598,20 +594,18 @@ if(makeQuantilePlots){
   # increase speed by using parallel processing and aggregate instead of ddply 
     if( objetSize > 800000000 & objetSize %/% 800000000 < 2 & length(whichQuantiles) > 4 ) {
       print("Large dataset: corenumber is set to 3 for calculating quantiles to avoid memory usage > 32GB")
-      cl<-makeCluster(3)
+      registerDoParallel(cores=3)
       } else if( objetSize %/% 800000000 >= 2 ) {
-        cl<-makeCluster(1)
+        registerDoParallel(cores=1)
         print("setting multicore to 1 for quantile calculations")
       } else {
-      cl<-makeCluster(length(whichQuantiles))
+      registerDoParallel(cores=length(whichQuantiles))
       }
-  registerDoSNOW(cl)
 
     myData_q <- foreach( qCounter = seq_along(whichQuantiles)) %dopar% {
               aggregate( value ~ treatment + dose_uM + timeAfterExposure + control + cell_line + variable,
               data = myDataL, quantile, whichQuantiles[qCounter], na.rm=TRUE)
     }
- stopCluster(cl)
  
  for (addQ in seq_along(myData_q)){
     myData_q[[addQ]]$quantile <- whichQuantiles[addQ]
@@ -683,15 +677,14 @@ if(sum(lapply(counts.d, length ) >1  ) > 0 ) {  # if any compound has more than 
 } else {
   myDataL$doseLevel <- 1
   }# end if multiple dose
-cl<-makeCluster(min(c(length(singleCellMeas[ singleCellMeas != "imageCountTracked"]), numberCores)))
-      registerDoSNOW(cl)
+  cores <- min(c(length(singleCellMeas[ singleCellMeas != "imageCountTracked"]), numberCores))
+      registerDoParallel(cores=cores)
       print("printing density plots:") 
       foreach(kk = seq_along(singleCellMeas[ singleCellMeas != "imageCountTracked"]), 
               .packages = c('ggplot2', 'grid', 'plyr'), .export = 'theme_sharp') %dopar% 
       {
         densityPlotFun(subset(myDataL,myDataL$variable == singleCellMeas[ singleCellMeas != "imageCountTracked"][kk]))
       }
-  stopCluster(cl)
 } # if densityPlots
 checkDoseLevel <- unique(myDataL[, c("dose_uM", "treatment", "doseLevel")])
 checkDoseLevel<- checkDoseLevel[ order(checkDoseLevel$treatment), ]
@@ -892,8 +885,8 @@ myTimeFun <- function(myData_ss_c){
   save(p, file = paste(  featuresDir, "/RDataFiles/", allVarCells[i], "_summary_", gsub( ".h5",""  , hdf5FileName ), ".RData", sep ="" ))
 } # end myTimeFun
 
-  cl<-makeCluster(min(c(length(allVarCells), numberCores)))
-  registerDoSNOW(cl)
+  cores <- min(c(length(allVarCells), numberCores)))
+  registerDoParallel(cores=cores)
   
   foreach( i = seq_along(allVarCells), .packages = c("ggplot2", "grid"), .export = "theme_sharp") %dopar% {
   myTimeFun(myData_ss[ myData_ss$allVarCells==allVarCells[i] | 
@@ -901,7 +894,6 @@ myTimeFun <- function(myData_ss_c){
                             myData_ss$cell_line == unique(myData_ss$cell_line[myData_ss$allVarCells==allVarCells[i]])  ), ])
 }
 
-  stopCluster(cl)
 
 #quantile plots - all quantiles per single feature
 if(makeQuantilePlots){
@@ -938,13 +930,12 @@ quantilePlotFun <- function(myData_ss_c) {
 } # quantilePlot fun
 colnames(myData_ssq)[ colnames(myData_ssq) == "value" ] <- "meanQ"
 myData_ssq$dose_uM <- round(myData_ssq$dose_uM, 3)
-cl<-makeCluster(min(c(length(qVarsCells), numberCores)))
-  registerDoSNOW(cl)
+cores <- min(c(length(qVarsCells), numberCores)))
+  registerDoParallel(cores=cores)
   
 foreach( i = 1 : length(qVarsCells), .packages = c("ggplot2", "grid"), .export = 'theme_sharp' )  %dopar% {
   suppressWarnings(quantilePlotFun(myData_ssq[ myData_ssq$qVarsCells==qVarsCells[i] , ]))
   }
-stopCluster(cl)
 } # end if statement quantileplots
 # now time curves for scaled data co-plotted:
 
@@ -1180,8 +1171,7 @@ uniqueWellGroups  = list()
     uniqueWellGroups[[countergroups]] <- uniqueWells[ uniqueWellsLevels == countergroups]
   }
 
-cl<-makeCluster(numberCores)
-  registerDoSNOW(cl)
+  registerDoParallel(cores=numberCores)
 
 cellNlist <- foreach ( cellC = seq_along(1:numberCores ), .packages = 'data.table') %dopar% {
 
@@ -1199,7 +1189,6 @@ cellNlist <- foreach ( cellC = seq_along(1:numberCores ), .packages = 'data.tabl
 cellNlist <- rbind.fill(cellNlist)
 write.table(cellNlist, file = 'trackedObject_counts.txt' ,  row.names = FALSE, sep = "\t")
 #rm("out.min", "out.max","out.both", "cellNlist", "partmyDFo")
-stopCluster(cl)
 #selFeatures <- gsub("\\/", "_",  str_match(  unlist(myFeaturePathsA), "([^/]*[\\/][.]*[^/]*)$")[, 1 ] ) 
   
  # selFeatures <- selFeatures[!is.na(selFeatures)]
@@ -1216,18 +1205,16 @@ indEnd_ <- unlist(lapply(kColNames, function(x) {grepl("(_)$", x)  }))
 names(indEnd_) <- NULL
 kColNames[indEnd_] <- paste(kColNames[indEnd_], track_dist, sep="")
 
-cl<-makeCluster(numberCores)
-  registerDoSNOW(cl)
+  registerDoParallel(cores=numberCores)
 
 
 
 allTrackDF<-foreach(i = seq_along(uniqueWellGroups), 
                     .packages = c("reshape2", "plyr","stringr", "data.table" )) %dopar% {
   myDFstukkie <- myDT[ uniqueWellGroups[ i ]]
-  fixTrackingFun(myDFstukkie, myFeatures)
+  fixTrackingFun(myDFstukkie, myFeatures, i)
 }
 
-stopCluster(cl)
 
 
 # pull out distinct data sets
@@ -1313,8 +1300,7 @@ require(grid)
 require(GGally)
 require(beanplot)
 require(ggplot2)
-library(doSNOW)
-library(foreach)
+library(doParallel)
 
 getwd()
 
@@ -1412,8 +1398,7 @@ print("Calculating single cell correlations for features: ")
 cat(paste(singleCellMeas, collapse = "\n"))
 Sys.sleep(0.1)
 
-cl<-makeCluster(numberCores)
-registerDoSNOW(cl)
+registerDoParallel(cores=numberCores)
 
 jumpInd <-length(all.locations) %/% numberCores
 all.location.Levels <- rep(1:numberCores, each = jumpInd)
@@ -1461,7 +1446,6 @@ corrMatrix <- foreach(i = seq_along(uniqueLocationsGroups), .packages = "plyr") 
   corrFun( pieceAlltrackDF )
   }
 
-stopCluster(cl)
 corrMatrixDF<- rbind.fill(corrMatrix)
 
 write.table(corrMatrixDF, file ="correlationTable.txt", col.names = NA, sep ="\t")
@@ -1556,8 +1540,7 @@ for( counterGr in seq_along(uniqueLocationsGroups)) {
   allTrackList_ncores <- split(allTrackDF, allTrackDF$locationLevels)
   allTrackList_ncores<-lapply(allTrackList_ncores, function(x) { x[, 'locationLevels'] <- NULL; return(x)}  )                     
   allTrackDF$locationLevels<-NULL
-cl<-makeCluster(numberCores)
-registerDoSNOW(cl)
+registerDoParallel(cores=numberCores)
 # use this list to create summaries
 print("aggregating data, if memory problems occur reduce number of cores")
  myData_ss_loc <- foreach(i = 1: numberCores  ) %dopar% {
@@ -1566,7 +1549,6 @@ value ~ feature +location + timePoint + treatment + dose_uM +
 control + cell_line + timeAfterExposure, data = allTrackList_ncores[[i]], mean, na.rm = TRUE) 
     
 } # 11 seconds = the winner!
-stopCluster(cl)
 rm(allTrackList_ncores)
 myData_ss_loc <- rbind.fill(myData_ss_loc)
 
@@ -1652,7 +1634,7 @@ if (!file.exists("trackOrderedPlots/timePlots")){
 # 
 
 cl<-makeCluster(numberCores, .outfile="")
-registerDoSNOW(cl)
+registerDoParallel(cl)
 
 
 if(!file.exists("trackOrderedPlots/timePlots/RDataFiles")){
@@ -1923,14 +1905,12 @@ sc.f <-  max(featSub$value[ featSub$feature==singleCellMeas[1]], na.rm = TRUE) /
     featSub_ncores<-lapply(featSub_ncores, function(x) { x[, 'locationLevels'] <- NULL; return(x)}  )                     
     featSub$locationLevels<-NULL
 
-cl<-makeCluster(numberCores)
-registerDoSNOW(cl)
+registerDoParallel(cores=numberCores)
 
       foreach(i = seq_along(uniqueLocationsGroups), .verbose = TRUE, .packages = c('ggplot2', 'grid'), .export = 'theme_sharp') %dopar% {
           myLinePlotFun(featSub_ncores[[i]])
       }
 
-stopCluster(cl)
 } #IF DisplvsFirsFeature_linePlot
 
 
@@ -2053,21 +2033,18 @@ dev.off()
 }
 } #densityPlotFun
 
-cl<-makeCluster(numberCores)
-registerDoSNOW(cl)
+registerDoParallel(cores=numberCores)
 
 
 
 foreach(kk = seq_along(singleCellMeas_noI), .packages = c('ggplot2', 'grid', 'plyr'), .export = 'theme_sharp', .verbose = TRUE) %dopar% {
   densityPlotFun(subset(allTrackDF,allTrackDF$feature ==singleCellMeas_noI[kk]))
   }
-stopCluster(cl)
 
 } # end if densityplot
 
 if(beanPlot){
-cl<-makeCluster(numberCores)
-registerDoSNOW(cl)
+registerDoParallel(cores=numberCores)
 myBeanFunction <- function(my.dat) {  
 my.dats <- split(my.dat$value, my.dat$treatment )
 
@@ -2088,7 +2065,6 @@ foreach(mm = seq_along(all.feat_cell), .packages = "beanplot") %dopar% {
                 )
   }
  par(las=1)
-stopCluster(cl)
 } # if beanplot
 
 
@@ -2146,8 +2122,7 @@ Combines several replicate yyyy_mm_dd_[ cell line ]_summarized.txt files
 ```{r }
 require(plyr)
 require(ggplot2)
-require(doSNOW)
-require(foreach)
+require(doParallel)
 require(grid)
 options(stringsAsFactors = FALSE)
 
@@ -2253,13 +2228,11 @@ save(p, file = paste(  featuresDir, "/RDataFiles/", allVars[j], "_summary_", "_"
 
 
 
-cl<-makeCluster(numberCores)
-registerDoSNOW(cl)
+registerDoParallel(cores=numberCores)
 
 foreach( j = 1 : length(allVars), .packages = c("ggplot2", "grid" ), .export = 'theme_sharp') %dopar% {
   timePlotFun(myData_ss_f =myData_ss[myData_ss$variable==allVars[j], ], yMax= yMax)
   }
-stopCluster(cl)
 
 ```
 
