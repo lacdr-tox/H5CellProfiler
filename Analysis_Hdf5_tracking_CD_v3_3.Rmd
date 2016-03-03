@@ -1085,10 +1085,8 @@ myDFo <- rbindlist(outputListmyDT)
 myFeatures <- gsub("/", "_", 
                      gsub("^(Measurements/[0-9]{4}(-[0-9]{2}){5}/)", "", kMyVars$myFeaturePathsA)
                      )
- kMyVars$numberCores<-1
 myFeatures <- c(myFeatures, "imageCountTracked")
 numberCores <- kMyVars$numberCores
-numberCores <-1
 writeSingleCellDataPerWell <- TRUE # write all single cell data in seperate file per well, takes time
 writeAllSingleCellData<- TRUE  # write all single cell data in single file, takes time, usefull because plotting/ summary chunk can then load this for later (re) runs
 
