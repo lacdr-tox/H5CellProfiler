@@ -33,57 +33,98 @@ fixTrackingFun <- function(myDFstukkie, myFeatures) {
     }
     t.n <- max(myAlltrack$groupInd)
     
+    # remove of identical parent numbers those with the non-shortest distance to respective parent.
     if(findMinIdenticalParents) {
-      #remove of identical parent numbers those with the non-shortest distance to respective parent.
-      # find out where multiple identical parent numbers are
-      
+     
+      # Per time frame (groupInd) count (.N) the number of cells that have the
+      # same tracking parent (trackingParentCN).
+      # The get is necessary because trackingParentCN is a column name (CN
+      # suffix) as string, but as a side effect the column with
+      # trackingParentCN in multipleP is now also named 'get'.
+      # multipleP will contain 3 columns: time frame (groupInd), the tracking
+      # parent (get), and how many objects have that tracking parent
+      # (multipleParents).
+      multipleP <- myAlltrack[, list(multipleParents = .N), by = list(groupInd, get(trackingParentCN))]
+
+      # Join the information in myAlltrack (regular tracking data) with the
+      # multipleP information. Rows are matched by time frame and tracking
+      # parent and the added multipleParent column shows how many objects share
+      # that same tracking parent.
+      # X[Y] is a join, looking up X's rows using Y (or Y's key if it has one)
+      # as an index.  The keys from Y disappear whereas the keys from X are
+      # kept.
       setkeyv(myAlltrack, c('groupInd', trackingParentCN))
-      
-      multipleP <-myAlltrack[, list(multipleParents =.N), by = list(groupInd, get(trackingParentCN)) ]
       setkeyv(multipleP, c('groupInd', 'get'))
-      myAlltrack<-myAlltrack[multipleP]
+      myAlltrack <- myAlltrack[multipleP]
       
-      # 0 means no parent, not multiple identical parent numbers
+      # A 0 tracking parent means no parent (= first observation of object), so
+      # objects with tracking parent 0 should not be considered as having
+      # identical tracking parents. We fix this by setting the mulipleparents
+      # value to 1 when the tracking parent is 0.
       setkeyv(myAlltrack, trackingParentCN)
       myAlltrack[list(0), multipleParents := 1L]
-      # select the multiple identical parent part of the data
-      multFrac <- round(sum(myAlltrack[, multipleParents > 1])/ nrow(myAlltrack), digits = 2)
+      
+      # Print the fraction of objects with duplicate parent objects in this
+      # part of the data.
+      multFrac <- round(sum(myAlltrack[, multipleParents > 1]) / nrow(myAlltrack), digits = 2)
       print(paste(currentUniqueWells[counterStukkie], ": contains", multFrac, "fraction of cells with same multiple parent numbers"))
       
-      # no loop woot! woot!
-      
-      myAlltracktMin1 <- myAlltrack[, c(trackingParentCN,trackingLabelCN, #Effectively t+plus 1 this way after the merge
-                                        trackingxCoordCN, trackingyCoordCN, 
+      # Now we want to match objects over 2 time frames to determine which of
+      # the objects with shared parent number is closest to the parent in the
+      # next time frame.  We make a duplicate of the data.table with the
+      # information we need about the earlier (t-1) time frame. (The with =
+      # FALSE is necessary so that the variable names are not interpreted as
+      # column names, see ?data.table)
+      myAlltracktMin1 <- myAlltrack[, c(trackingParentCN, trackingLabelCN,
+                                        trackingxCoordCN, trackingyCoordCN,
                                         trackingObjectNumberCN, 'groupInd' ),
                                     with = FALSE
                                     ]
-      
-      setnames(myAlltracktMin1, colnames(myAlltracktMin1), 
-               paste(colnames(myAlltracktMin1), 
+
+      # Append '_tMin1' to all the column names.
+      setnames(myAlltracktMin1, colnames(myAlltracktMin1),
+               paste(colnames(myAlltracktMin1),
                      "tMin1", sep ="_"))
-      myAlltracktMin1[, groupInd_tMin1:=groupInd_tMin1+1]
-      
-      setkeyv(myAlltracktMin1, c("groupInd_tMin1",paste( trackingObjectNumberCN, "tMin1", sep = "_"))) # these don't
-      setkeyv(myAlltrack, c("groupInd", trackingParentCN)) # these names dissapear
-      
-      #X[Y] is a join, looking up X's rows using Y (or Y's key if it has one) as an index.
+
+      # Now we increase the time frame (groupInd_tMin1) by 1 so we can match
+      # with time frame at point t (groupInd).
+      myAlltracktMin1[, groupInd_tMin1 := groupInd_tMin1 + 1]
+     
+      # Now we join the original data with the t-1 data. We match the time
+      # frame from t-1 (groupInd_tMin1, which we increased by 1) with the time
+      # frame at time t (groupInd), and most importantly, the tracking object
+      # number at t-1 with the tracking parent of t.
+      setkeyv(myAlltracktMin1, c("groupInd_tMin1", paste( trackingObjectNumberCN, "tMin1", sep = "_")))
+      setkeyv(myAlltrack, c("groupInd", trackingParentCN))
       myAlltrackBoth <- myAlltracktMin1[myAlltrack]
       
-      #select MP's
-      myAlltrackBothWithMP <- myAlltrackBoth[multipleParents >1 & !is.na(multipleParents)]
+      # Now select the objects with multiple parents...
+      myAlltrackBothWithMP <- myAlltrackBoth[multipleParents > 1 & !is.na(multipleParents)]
+      # ... and calculate the distance to that parent.
       myAlltrackBothWithMP[ , distMP := sqrt((get(trackingxCoordCN_tMin1) - get(trackingxCoordCN))^2 +
                                                (get(trackingyCoordCN_tMin1) - get(trackingyCoordCN))^2)]
-      # reset original names
+
+      # Because in the join the names with '_tMin1' were kept, we need to reset
+      # them to the original names.
       setnames(myAlltrackBothWithMP, c("groupInd_tMin1", paste(trackingObjectNumberCN, 'tMin1', sep = '_')),
                c("groupInd", trackingParentCN))
       
+      # Now determine for each tracking parent the index (.I) of the object
+      # which is closest...
       Ind_Min <- myAlltrackBothWithMP[ , list(Ind_Min=.I[which.min(distMP)]), by = c("groupInd", trackingParentCN)]
-      Ind_Min<-Ind_Min[,Ind_Min]
-      
+      # ... and convert these indices to a vector.
+      Ind_Min <- Ind_Min[, Ind_Min]
+
+      # Now from the data.table with objects that have duplicate parents,
+      # select the time frame and object number of those that are not closest
+      # to the parent object. We want to disconnect these objects from their
+      # parents by setting their tracking parent to 0.
       keepMPs <- myAlltrackBothWithMP[!Ind_Min, c("groupInd", trackingObjectNumberCN), with = FALSE]
-      
+
+      # Now, by doing a join, find these objects in data.table with the
+      # original tracking info, and set the tracking parent to 0.
       setkeyv(myAlltrack, c("groupInd", trackingObjectNumberCN))
-      myAlltrack[keepMPs, trackingParentCN := 0, with = FALSE] 
+      myAlltrack[keepMPs, trackingParentCN := 0, with = FALSE]
       
       
     } # end if findIdenticalParents
