@@ -1,4 +1,4 @@
-fixTrackingFun <- function(myDFstukkie, myFeatures) {
+fixTrackingFun <- function(myDFstukkie, myFeatures, i) {
   
   
   trackingParentCN <- kColNames$trackingParentCN
