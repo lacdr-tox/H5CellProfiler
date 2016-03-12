@@ -491,13 +491,13 @@ myFeaturesData = list()
 if ( ( length(myFeaturePaths) != 0) ) {
   for ( i in 1 : length( myFeaturePaths ) ) 
     {
-
-    hdf5Path <- myFeaturePaths[[i]]
+    
+      hdf5Path <- myFeaturePaths[[i]]
       preName <- gsub(paste("Measurements/", setDateID, sep =""), "", myFeaturePaths[[i]])
       pat<-"([/][[:alnum:][:digit:][:punct:]]*[/])" 
     rowIndName <- gsub("/","",str_match(preName, pat ))[1]
-    dataName <- gsub(rowIndName, "", preName) 
-    dataName <- gsub("/", "", dataName)
+    dataName <- gsub( paste( "/", rowIndName, sep =""), "", preName) 
+    dataName <- gsub("[/]", "", dataName)
     myFeaturesData[[i]] <- hdf5IndexFun( hdf5Path = hdf5Path , 
                                       dataName = dataName, 
                                       rowIndName = rowIndName )
