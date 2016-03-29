@@ -364,39 +364,44 @@ metaCSVData <- metaCSVData[ !0 ]
 metaCSVData <- metaCSVData[ !is.na(locationID),]
 
 if ( length(metaCSVData$treatment) != length(metaCSVData$dose_uM[metaCSVData$dose_uM!="" & !is.na(metaCSVData$dose_uM)]) ){
-  stop("Some treatments did not have valid concentration in CSV metadata file")
+  stop("Some treatments did not have valid concentration in metadata file")
 }
 
 if( !all(unique(myDFrawImage$plateID) %in% unique(metaCSVData$plateID)) 
       )
 {
-  stop("Could not match all manualy defined ID's to plate layout ID's")
+  stop("Could not match all manualy defined ID's to plate layout ID's, please double check the plateID definitions in your layout-file")
 }
 
 if(  !all(unique(metaCSVData$plateID) %in% unique(myDFrawImage$plateID)))
 {
-  warning("Could not match all plate layout ID's to manualy defined plateID's ")
+  warning("Could not match all plate-layout plateID's to plateID's in data: consult \"HDF5notInLayout.txt\" ")
 }
 
 
 myDFrawImage[ , plateWellID:= paste(plateID, locationID, sep ="_")]
 
-HDF5notInLayout <- !gsub( "(_[0-9]{1,2})$", "", unique(myDFrawImage$plateWellID)) %in% 
-  unique(paste(metaCSVData$plateID, metaCSVData$locationID, sep ="_"))
+
+
+#HDF5notInLayout <- !gsub( "(_[0-9]{1,2})$", "", unique(myDFrawImage$plateWellID)) %in% 
+#  unique(paste(metaCSVData$plateID, metaCSVData$locationID, sep ="_"))
+
+
+
 
 uniqueWells <- unique(myDFrawImage$plateWellID)
 
-write.table(file = "HDF5notInLayout.txt", 
-            gsub( "(_[0-9]{1,2})$", "", 
-                  unique(myDFrawImage$plateWellID ))[HDF5notInLayout], sep = "\t"  )
+#write.table(file = "HDF5notInLayout.txt", 
+#            gsub( "(_[0-9]{1,2})$", "", 
+#                  unique(myDFrawImage$plateWellID ))[HDF5notInLayout], sep = "\t"  )
 
 
-ind <- match(  gsub( "(_[0-9]{1,2})$", "", myDFrawImage$plateWellID),
-               paste(metaCSVData$plateID, metaCSVData$locationID, sep ="_"))
-  if ( length( ind ) != sum(!is.na(ind) ) | length( ind ) == 0 ) 
-      {
-      warning( "CP analysed wells not found, could result in errors consult written text files")
-      }
+ ind <- match(  gsub( "(_[0-9]{1,2})$", "", myDFrawImage$plateWellID),
+                paste(metaCSVData$plateID, metaCSVData$locationID, sep ="_"))
+   if ( length( ind ) != sum(!is.na(ind) ) | length( ind ) == 0 ) 
+       {
+       warning( "CP analysed wells not found, could result in errors consult written text file:  \"HDF5notInLayout.txt\"") # after metadata merge to imagedata
+       }
 myDFrawImage$joiner <- gsub( "(_[0-9]{1,2})$", "", myDFrawImage[ , locationID ])
 setkeyv(myDFrawImage, c("plateID","joiner" ))
 setkeyv(metaCSVData, c("plateID","locationID"))
@@ -407,7 +412,7 @@ if(nrow(metaCSVData) != length(unique(checkUnique))){
   stop("duplicate locationID - plateID keys, check layout file")
 }
 
-myDFImage <- metaCSVData[myDFrawImage] # make sure CSVData contains all the locations and plateIDs found in hdf5 else error will occur (will make extra rows compared to largest)
+myDFImage <- metaCSVData[myDFrawImage] # make sure CSVData contains all the locations and plateIDs found in hdf5 else NA values in data from missing plate layout values
 
 if(!identical(myDFImage$locationID, gsub("(_[0-9]{1,2})$", "",myDFImage$i.locationID))){
   write.table(file="testingMCmergeMDIMagedataFail.txt", myDFImage[, list(locationID,i.locationID) ], sep ="\t", col.names = T)
@@ -421,6 +426,8 @@ setnames(myDFImage, "i.locationID", "locationID")
 # select correct metadata columns (from hdf5, manually or from metadata layout file)
 # if NA in metadata layout then these are removed. Else alternative is removed and metadata ones renamed
 
+
+
 if(any(is.na(metaCSVData[ , timeID]))) { # if NA in layout file then use the i.timeID (check which one this is)
   myDFImage$timeID <- NULL
    setnames(myDFImage, 'i.timeID', 'timeID')
@@ -431,17 +438,21 @@ if(any(is.na(metaCSVData[ , timeID]))) { # if NA in layout file then use the i.t
 
 
 
-if(any(is.na(myDFImage[ , replID]))) {
+if(any(is.na(metaCSVData[ , replID])) ) {
+  
   myDFImage[,replID:=NULL]
-  if( "i.replID" %in% colnames(myDFImage) ){
+
+    if( "i.replID" %in% colnames(myDFImage) ){
     setnames(myDFImage, 'i.replID', 'replID')
   }
   
-} else {
-  myDFImage[,i.replID := NULL]
-}
+} 
 
-
+# following plate and well/locationID from analyzed images was not probably not found in layout file:
+# this is removed before further processing, however user should be notified to verify analysis
+missingInLayout <- myDFImage[ is.na(treatment) & is.na(dose_uM) & is.na(control) & is.na(cell_line)  ]
+write.table( missingInLayout, file = "HDF5notInLayout.txt", sep = "\t", col.names = TRUE, row.names = FALSE)
+myDFImage <- myDFImage[ !(is.na(treatment) & is.na(dose_uM) & is.na(control) & is.na(cell_line) )  ]
 # To pass an expression into your own function, one idiom is as follows :
 #   > DT = as.data.table(iris)
 # > setkey(DT,Species)
@@ -451,9 +462,9 @@ if(any(is.na(myDFImage[ , replID]))) {
 #   + }
 # > myfunction(DT,sum(Sepal.Width))
 
-if(nrow(myDFImage) != nrow(myDFrawImage)){
-  warning("merging metadata error: some CP-analysed data not found in plate-lyaout file, consult written text file" )
-  }
+#if(nrow(myDFImage) != nrow(myDFrawImage)){
+#  warning("merging metadata error: some CP-analysed data not found in plate-lyaout file, consult written text file" )
+#  }
 
 if(any(is.na(myDFImage$imageNumber))){
   stop("missing data in metadata file")
@@ -692,8 +703,9 @@ myDT<-myDFImage[myDTParent] # soms missing images omdat geen objecten in myDTPar
 #X[Y] looks up rows in X using key of Y:
 #myDT <- myDTParent[myDFImage]
 ind.rm<-grep( "(i\\.imageNumber)$", colnames(myDT))
+if(length(ind.rm)!=0) {
 myDT[,c(ind.rm):=NULL]
-
+}
 
 rm("myDTParent", "myDFImage")  
 

@@ -56,7 +56,7 @@ verifyInputFun <- function(trackedObject=trackedObject, trackingLabel=trackingLa
   dateXls <- str_match( plateMDFileName, "[0-9]{4}[:blank: \\_ \\-]{1}[0-9]{2}[:blank: \\_ \\-]{1}[0-9]{2}" )
   dateH5 <- str_match( hdf5FileName, "[0-9]{4}[:blank: \\_ \\-]{1}[0-9]{2}[:blank: \\_ \\-]{1}[0-9]{2}" )
   if( any(is.na(c(dateXls, dateH5)))) {
-    warning("No date found in h5 or/ and metadata file name") 
+    
   } else {
     if ( any( is.na( c( dateXls, dateH5 ) ) ) == TRUE )
     {

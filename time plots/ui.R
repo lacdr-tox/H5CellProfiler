@@ -6,7 +6,7 @@ ids <- colnames(myDFo)
 facLevels <- c("treatment","plateID",  "dose_uM", "timeID", 
                "controlID", "replID", "locationID", "control", 
                "cell_line", "imageID", "plateWellID", "timeAfterExposure", kColNames$parentObjectNumberCN)
-
+sumLevels <- colnames(myDFo)
 
 shinyUI(fluidPage( 
   titlePanel("CellProfiler h5 GUI"),
@@ -35,7 +35,7 @@ helpText("Create summary statistics and make
       
       selectInput("by.what", 
                   label = "Summary by what:",
-                  choices = facLevels,
+                  choices = sumLevels,  #facLevels   This is confusing for user as  facLevels need not be in data
                   multiple = TRUE,
                   selected = c("treatment", "timeID", "dose_uM", "plateID")
                   ),
