@@ -124,6 +124,7 @@ fixTrackingFun <- function(myDFstukkie, myFeatures, i) {
       # Now, by doing a join, find these objects in data.table with the
       # original tracking info, and set the tracking parent to 0.
       setkeyv(myAlltrack, c("groupInd", trackingObjectNumberCN))
+      setkeyv(keepMPS, c("groupInd", trackingObjectNumberCN))
       myAlltrack[keepMPs, trackingParentCN := 0, with = FALSE]
       
       
