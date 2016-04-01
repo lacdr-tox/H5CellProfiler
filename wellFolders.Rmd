@@ -1,0 +1,257 @@
+NIS-ELEMENTS ND2 tif export from 1 folder to well-named folders
+========================================================
+
+author Steven Wink 
+email: steven.wink@gmail.com
+last update: 2014-06-09
+
+
+* zorg dat je gelijke hoeveelheid tijdpunten in elke wel hebt (dit is soms niet zo met bijv EZ-C software als je halverwege  de plaat met imaging stopt)
+* input van gebruiker: start well, well-rechtsboven, well-rechtsonder, zig-zag imagen in rij (A01..A24) of kolom(A01 ...P01) richting
+* aflezen aan plaatjes: tijdpunten, kanalen, locaties per well
+* schrijft een output in je working dir
+* export tif format moet xy - c - t zijn of
+* if only 1 timepoint or channel: will automatically rename files accordingly if needed
+* Neem als working directory de folder waar je tiff folder in zit
+* this version can do columns as well + does not need time or channel
+```{r}
+#====================# input from user:=========================================================
+#===============================================================================================
+library(stringr);
+rm(list=ls())
+
+
+imageDir <- "H:/test Gerhard/tiffs"
+copyTo <- "H:/test Gerhard"
+topLeftWell <- "A01"
+topRightWell <- "A06"
+bottomRightWell <- "D06"
+zigzagDirection <-"rows"; #choose  "rows"  or "columns" or "notZigzagRowWise"  zig-zag imagen in rij (A01..A24) of kolom(A01 ...P01) richting
+
+nChannel <-2
+
+
+#===================# end input from user========================================================
+#================================================================================================
+
+imageFiles <- dir( imageDir );
+# create the entire 384 well plate:
+
+  
+defaultPlate <- data.frame( matrix(NA,  nrow = 16, ncol = 24 ) )
+rownames( defaultPlate ) <- intToUtf8( 65:80, multiple=TRUE)
+firstNine <- paste('0', 1:9, sep = "")
+allOfEm <- c( firstNine, 10:24 );
+colnames( defaultPlate ) <-  allOfEm ;
+
+
+for ( i in 1 : nrow( defaultPlate ) )
+  {  
+    for ( j in 1 : ncol( defaultPlate ) )
+      {
+      defaultPlate[ i, j ] <- paste ( rownames( defaultPlate )[ i  ], colnames( defaultPlate )[ j ], sep = "" );
+      }
+  
+  }
+
+
+
+# now adjust the plate to well imaged
+#returns a list of with columns as names with entry the row number
+topLeftWell_ind <- lapply(defaultPlate, function( x ) match( topLeftWell, x )  );
+topLeftWell_ind <- topLeftWell_ind [ topLeftWell_ind !="NA" ]
+colStart_ind <-as.integer( names(topLeftWell_ind) );
+rowStart_ind <- as.integer( topLeftWell_ind[] );
+
+topRightWell_ind <- lapply(defaultPlate, function( x ) match( topRightWell, x )  );
+topRightWell_ind <- topRightWell_ind [ topRightWell_ind !="NA" ]
+colTopRight_ind <-as.integer( names(topRightWell_ind) );
+rowTopRight_ind <- as.integer( topRightWell_ind[] );
+
+bottomRightWell_ind <- lapply(defaultPlate, function( x ) match( bottomRightWell, x )  );
+bottomRightWell_ind <- bottomRightWell_ind [ bottomRightWell_ind !="NA" ]
+colbottomRight_ind <-as.integer( names(bottomRightWell_ind) );
+rowbottomRight_ind <- as.integer( bottomRightWell_ind[] );
+
+
+if ( rowTopRight_ind != rowStart_ind ) 
+  {
+  stop(" top left and top right imaged rows are not the same.");
+  }
+
+  if ( colbottomRight_ind != colTopRight_ind   ) 
+  {
+  stop(" top right column and bottom right imaged columns are not the same.");
+  }
+
+# now use the indexes to make the adjusted well layout dataframe
+imagedPlate <- defaultPlate[ rowStart_ind : rowbottomRight_ind  ,  colStart_ind : colbottomRight_ind, drop= FALSE   ]; 
+
+
+
+nWells <- ( colTopRight_ind - colStart_ind + 1 )  * ( rowbottomRight_ind - rowStart_ind + 1 );
+
+timeString <- unique(str_match( imageFiles, "(t[0-9]{1,3}.tif)$")[, 1])
+channelString <- unique(str_match( imageFiles, "(xy[0-9]{1,4}c[1-4]{1}\\w{,3}.tif)$")[, 1])
+
+nTimePoints <- length( timeString);
+nImages <-length(str_match(imageFiles, "(\\w*.tif)$")[,1])
+nImagesWell <- nImages / ( nWells * nTimePoints * nChannel );
+
+if (  round(nImagesWell, digits = 0 ) != nImagesWell ) 
+  {
+  stop ( " check well definitions")
+  }
+
+# regular expression to find the folder name of the image directory, will use this name to make a new directory in current WD to create well-folders
+pat <- "([^/]*)$";
+
+
+imageFolderName <- paste( str_match(imageDir, pat)[,1], "wells", sep ="_");
+outputPath <- paste( copyTo, imageFolderName, sep = "/" );
+if (!file.exists( outputPath)){
+dir.create( outputPath )
+}
+
+
+
+
+#zigzag is the column number 
+
+ 
+if ( zigzagDirection == "rows"){
+  zigzagSeq <- rep( c(seq(1, ncol( imagedPlate ) ), seq( ncol( imagedPlate ), 1 ) ), ceiling( nrow( imagedPlate )/ 2 ) );
+  zigzagSeq <- zigzagSeq[ 1 : nWells ];
+  } else if (zigzagDirection == "columns" ){
+    zigzagSeq <- rep( seq(1, ncol( imagedPlate ) ) , each = nrow( imagedPlate ) )
+    zigzagSeq <- zigzagSeq[ 1 : nWells ];
+      } else {
+      stop("incorrect zigzag")
+}
+  
+  
+# find out length of image numbers in file names, use to create vector of image number names that can be used to pick out sets of images per well.
+imageN <- unique( sub("xy", "", str_match( imageFiles, "xy[0-9]{1,4}" ) ) ) ;
+nDigits <- nchar( as.character( imageN[ 1 ] ) );
+
+#bellow could be usefull but right now just using a formula that go's through image numbers and puts them in folders in a image number order based method
+# if ( nDigits == 2 )
+#   {
+#   firstNine <- paste("0", 1 : 9, sep = "");
+#   grepper2Digits <- c( firstNine, 10 : length( imageN ) );
+# 
+#   } else if ( nDigits == 3 )
+#       {
+#       
+#         if ( length ( imageN ) > 99 ) 
+#             {
+#           firstNine <- paste("00", 1 : 9, sep = "");
+#           afterNine <- c( firstNine,  paste( "0", 10 : 99, sep = "" ) );
+#           grepper3Digits <- c( afterNine, 100 : length( imageN ) );
+#             }
+#              if ( length (imageN ) < 100  )
+#                {
+#                firstNine <- paste("00", 1 : 9, sep = "");
+#                grepper3Digits <- c( firstNine,  paste( "0", 10 : length( imageN ), sep = "" ) );
+#             
+#                }
+#       } else 
+#         {
+#           stop("Incorrect number of digits in image number, must be 2 or 3.");
+#         }
+#   
+#i=0  j=0
+# create well folders and load image files with regular expression
+if (zigzagDirection == "rows"){
+for ( i in 0 : ( nWells - 1 )  )
+           { 
+           rowCounter <- ( i %/% ncol( imagedPlate )  + 1 ); # elke kolom-aantal van imagedPlate dan schuift het een rij op
+               for ( j in 0 : ( nImagesWell - 1 ) )
+                 {
+               wellOutPutPath <- paste( outputPath, imagedPlate[ rowCounter ,  zigzagSeq[ i + 1 ] ], sep ="/" );
+                wellOutPutPathE <- paste( wellOutPutPath, j + 1, sep ="_" );      
+            if (!file.exists(wellOutPutPathE)){
+               dir.create( wellOutPutPathE  )
+              }
+               print( paste( wellOutPutPathE, " created.", sep = "" ) );
+          
+               pattern1 <- paste( "xy", imageN[ nImagesWell * i + 1  + j ], sep = ""  );
+               
+               currentImages <- grep( pattern1, imageFiles, value = TRUE );
+               print( paste( "first image and last of set: ", c( currentImages[1], currentImages [ length( currentImages )] )));
+      
+               
+               #file.copy( paste( imageDir, currentImages, sep = "/" ),  paste( wellOutPutPathE, currentImages, sep = "/" ) );
+            file.copy( paste( imageDir, currentImages, sep = "/" ),  paste( wellOutPutPathE, currentImages, sep = "/" ) );  
+            }
+          
+          }
+      } else if ( zigzagDirection == "columns") {
+        rowInd <- rep( c(seq(1, nrow( imagedPlate ) ), seq( nrow( imagedPlate ), 1 ) ), ceiling( ncol( imagedPlate )  / 2 )) 
+         rowInd <- rowInd[ 1 : nWells ];
+        for ( i in 0 : ( nWells - 1 )  )
+                  { 
+            for ( j in 0 : ( nImagesWell - 1 ) )
+                 {        
+              
+              
+                wellOutPutPath <- paste( outputPath, imagedPlate[ rowInd[ i + 1] ,  zigzagSeq[ i + 1 ] ], sep ="/" );
+                wellOutPutPathE <- paste( wellOutPutPath, j + 1, sep ="_" );      
+            if (!file.exists(wellOutPutPathE)){
+               dir.create( wellOutPutPathE  )
+              }
+               print( paste( wellOutPutPathE, " created.", sep = "" ) );
+          
+               pattern1 <- paste( "xy", imageN[ nImagesWell * i + 1  + j ], sep = ""  );
+               
+               currentImages <- grep( pattern1, imageFiles, value = TRUE );
+               print( paste( "first image and last of set: ", c( currentImages[1], currentImages [ length( currentImages )] ), collapse = ""));
+      
+               print( paste( "Copying files to and showing first image of set:", paste( wellOutPutPathE, currentImages[1], sep = "/" ) , sep = "") )
+               #file.copy( paste( imageDir, currentImages, sep = "/" ),  paste( wellOutPutPathE, currentImages, sep = "/" ) );
+            file.copy( paste( imageDir, currentImages, sep = "/" ),  paste( wellOutPutPathE, currentImages, sep = "/" ) );  
+            
+            
+            
+                 
+            
+            }
+        } 
+    } else if( zigzagDirection ==  "notZigzagRowWise") {
+      colCounter <- 0 
+      for ( i in 0 : ( nWells - 1 )  )
+           { 
+           rowCounter <- ( i %/% ncol( imagedPlate )  + 1 ); # elke kolom-aantal van imagedPlate dan schuift het een rij op
+           colCounter <- colCounter + 1
+           if(colCounter > ncol(imagedPlate)){
+             colCounter <-1
+           }
+           
+           for ( j in 0 : ( nImagesWell - 1 ) )
+                 {
+               wellOutPutPath <- paste( outputPath, imagedPlate[ rowCounter , colCounter  ], sep ="/" );
+                wellOutPutPathE <- paste( wellOutPutPath, j + 1, sep ="_" );      
+            if (!file.exists(wellOutPutPathE)){
+               dir.create( wellOutPutPathE  )
+              }
+               print( paste( wellOutPutPathE, " created.", sep = "" ) );
+          
+               pattern1 <- paste( "xy", imageN[ nImagesWell * i + 1  + j ], sep = ""  );
+               
+               currentImages <- grep( pattern1, imageFiles, value = TRUE );
+               print( paste( "first image and last of set: ", c( currentImages[1], currentImages [ length( currentImages )] )));
+      
+               print( paste( "copying files to and showing first image of set:", paste( wellOutPutPathE, currentImages[1], sep = "/" ) , sep = "") )
+               #file.copy( paste( imageDir, currentImages, sep = "/" ),  paste( wellOutPutPathE, currentImages, sep = "/" ) );
+            file.copy( paste( imageDir, currentImages, sep = "/" ),  paste( wellOutPutPathE, currentImages, sep = "/" ) );  
+            }
+  
+  }
+           } else {
+  stop("incorrect zigzagDirection #2 error")
+}
+     
+
+
+```
+
