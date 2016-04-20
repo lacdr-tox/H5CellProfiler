@@ -170,7 +170,7 @@ oscillation <- FALSE  # TRUE / FALSE  - will extract oscillation related paramet
 
 writeSingleCellDataPerWell <- FALSE # write all single cell data in seperate file per well, takes time
 writeAllSingleCellData<- FALSE  # Only needed of you need the txt file yourselfl writes all single cell data in single txt file.
-numberCores <- min(4, detectCores()) # should be specified after sourcing mainFunction -> weird dependency, should fix
+numberCores <- min(4, detectCores()) 
 dir()
 
 
@@ -194,7 +194,8 @@ outputList<- foreach( h5loop = seq_along(hdf5FileNameL ),
      oscillation=oscillation, 
      writeSingleCellDataPerWell=writeSingleCellDataPerWell, 
      writeAllSingleCellData=writeAllSingleCellData,
-     timeBetweenFrames=timeBetweenFrames, exposureDelay=exposureDelay 
+     timeBetweenFrames=timeBetweenFrames, exposureDelay=exposureDelay,
+     numberCores = numberCores
      )
    }
 } else {
@@ -209,7 +210,8 @@ outputList<- foreach( h5loop = seq_along(hdf5FileNameL ),
      oscillation=oscillation, 
      writeSingleCellDataPerWell=writeSingleCellDataPerWell, 
      writeAllSingleCellData=writeAllSingleCellData,
-     timeBetweenFrames=timeBetweenFrames, exposureDelay =exposureDelay
+     timeBetweenFrames=timeBetweenFrames, exposureDelay =exposureDelay,
+     numberCores = numberCores
      )
 }
   

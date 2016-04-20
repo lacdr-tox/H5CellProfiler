@@ -9,9 +9,9 @@ mainFunction <- function(  hdf5FileNameL=hdf5FileNameL,locationID=locationID, ti
                            oscillation=oscillation, 
                            writeSingleCellDataPerWell=writeSingleCellDataPerWell, 
                            writeAllSingleCellData=writeAllSingleCellData, h5loop=h5loop,
-                           timeBetweenFrames = timeBetweenFrames, exposureDelay = exposureDelay) {
+                           timeBetweenFrames = timeBetweenFrames, exposureDelay = exposureDelay,
+                           numberCores = numberCores) {
 
-  
   #h5loop=1
   hdf5FileName <- hdf5FileNameL[h5loop]
   # metadata can be manualy defined by user per h5 file, or a single or per h5 file a h5 path
