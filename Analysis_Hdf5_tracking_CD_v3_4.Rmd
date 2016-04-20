@@ -887,7 +887,7 @@ myTimeFun <- function(myData_ss_c){
   save(p, file = paste(  featuresDir, "/RDataFiles/", allVarCells[i], "_summary_", gsub( ".h5",""  , hdf5FileName ), ".RData", sep ="" ))
 } # end myTimeFun
 
-  cores <- min(c(length(allVarCells), numberCores)))
+  cores <- min(c(length(allVarCells), numberCores))
   registerDoParallel(cores=cores)
   
   foreach( i = seq_along(allVarCells), .packages = c("ggplot2", "grid"), .export = "theme_sharp") %dopar% {
@@ -932,7 +932,7 @@ quantilePlotFun <- function(myData_ss_c) {
 } # quantilePlot fun
 colnames(myData_ssq)[ colnames(myData_ssq) == "value" ] <- "meanQ"
 myData_ssq$dose_uM <- round(myData_ssq$dose_uM, 3)
-cores <- min(c(length(qVarsCells), numberCores)))
+cores <- min(c(length(qVarsCells), numberCores))
   registerDoParallel(cores=cores)
   
 foreach( i = 1 : length(qVarsCells), .packages = c("ggplot2", "grid"), .export = 'theme_sharp' )  %dopar% {
