@@ -177,24 +177,24 @@ writeAllSingleCellData<- TRUE  # write all single cell data in single file, take
 # ===================== User defined variables =====================
 
 
-reconnect_tracks <- TRUE # moet op true (FALSE not implemented yet)
-max_pixel_reconnect1 <- 20 # if larger than CP settings calculation overhead can become alot higher
-max_pixel_reconnect2 <- 20 # further in time cells might be further away from parent
-max_pixel_reconnect3 <- 20
-reconnect_frames <- 2  # over how many frames to connect? can choose 1,2 or 3. 1 means no frame is skipped, 2 then 1 frame is skipped etc. will first perform direct linking then skip 1 frame then 2 to try and reconnect tracks based on maximal considered distance
+reconnect_tracks <- config$`reconnect-tracks` # moet op true (FALSE not implemented yet)
+max_pixel_reconnect1 <- config$`max-pixel-reconnect`[1] # if larger than CP settings calculation overhead can become alot higher
+max_pixel_reconnect2 <- config$`max-pixel-reconnect`[2] # further in time cells might be further away from parent
+max_pixel_reconnect3 <- config$`max-pixel-reconnect`[3]
+reconnect_frames <- config$`reconnect-over-frames`  # over how many frames to connect? can choose 1,2 or 3. 1 means no frame is skipped, 2 then 1 frame is skipped etc. will first perform direct linking then skip 1 frame then 2 to try and reconnect tracks based on maximal considered distance
 skip.wells <- c( )
-minTrackedFrames <- 20 # remove short tracks from data output
-findMinIdenticalParents <- TRUE #  if an object has multiple (tracking) parents - do you want to select the closest one or a random one? 
-findMinIdenticalParents_distance_Feature <- TRUE # (FALSE is not implemented yet) TRUE for distance based selection, FALSE for Feature (myFeature) based selection of parent 
+minTrackedFrames <- config$`min-tracked-frames` # remove short tracks from data output
+findMinIdenticalParents <- config$`find-min-identical-parents` #  if an object has multiple (tracking) parents - do you want to select the closest one or a random one? 
+findMinIdenticalParents_distance_Feature <- config$`find-min-identical-parents-distance-feature` # (FALSE is not implemented yet) TRUE for distance based selection, FALSE for Feature (myFeature) based selection of parent 
 
 summaryStatFunction <- function(x) { mean(x, na.rm = TRUE) } # function(x) { mean(x, na.rm = TRUE) }  or function(x) { quantile(x, 0.8, na.rm = TRUE) } (you can choose which quantile - here it is set to 0.8)
 errorType <- "sd"   #"sd"  or  "cl95"   the cl95 is two sided 95% confidence interval. sd is standard error, half above and half under the average
-numberCores <- outputList$numberCores 
-writeUniqueParentsNoRec <- TRUE
-writeBeforeCombineTracks<- TRUE
-writeAfterFirstConnect<- TRUE
-writeAfterSecondReconnect<- TRUE
-writeAfterThirdReconnect<- TRUE
+numberCores <- cores
+writeUniqueParentsNoRec <- config$write$`unique-parents-no-rec`
+writeBeforeCombineTracks<- config$write$`before-combine-tracks`
+writeAfterFirstConnect<- config$write$`after-first-connect`
+writeAfterSecondReconnect<- config$write$`after-second-connect`
+writeAfterThirdReconnect<- config$write$`after-third-connect`
 ## ========================== end user defined variables============
 ## ========================== end user defined variables============
 ## ========================== end user defined variables============
