@@ -202,7 +202,7 @@ writeAfterThirdReconnect<- config$write$`after-third-connect`
 
 
 if(exists('allTrackDF')){
-rm("allTrackDF") # needs to be removed to be able to re-run this block
+  rm(allTrackDF) # needs to be removed to be able to re-run this block
 }
 
 
