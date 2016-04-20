@@ -52,7 +52,6 @@ modules:
       - 20
     min-tracked-frames: 20
     find-min-identical-parents: true
-    find-min-identical-parents-distance-feature: true
     write:
       unique-parents-no-rec: true
       before-combine-tracks: true

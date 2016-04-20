@@ -185,7 +185,6 @@ reconnect_frames <- config$`reconnect-over-frames`  # over how many frames to co
 skip.wells <- c( )
 minTrackedFrames <- config$`min-tracked-frames` # remove short tracks from data output
 findMinIdenticalParents <- config$`find-min-identical-parents` #  if an object has multiple (tracking) parents - do you want to select the closest one or a random one? 
-findMinIdenticalParents_distance_Feature <- config$`find-min-identical-parents-distance-feature` # (FALSE is not implemented yet) TRUE for distance based selection, FALSE for Feature (myFeature) based selection of parent 
 
 summaryStatFunction <- function(x) { mean(x, na.rm = TRUE) } # function(x) { mean(x, na.rm = TRUE) }  or function(x) { quantile(x, 0.8, na.rm = TRUE) } (you can choose which quantile - here it is set to 0.8)
 errorType <- "sd"   #"sd"  or  "cl95"   the cl95 is two sided 95% confidence interval. sd is standard error, half above and half under the average
