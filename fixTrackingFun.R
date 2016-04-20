@@ -1,4 +1,8 @@
-fixTrackingFun <- function(myDFstukkie, myFeatures, i) {
+fixTrackingFun <- function(myDFstukkie, myFeatures, i, kColNames, uniqueWellGroups, findMinIdenticalParents,
+                           writeUniqueParentsNoRec, writeBeforeCombineTracks, reconnect_tracks,
+                           max_pixel_reconnect1, max_pixel_reconnect2, max_pixel_reconnect3,
+                           writeAfterFirstConnect, writeAfterSecondReconnect, writeAfterThirdReconnect,
+                           reconnect_frames, minTrackedFrames, writeSingleCellDataPerWell) {
   
   
   trackingParentCN <- kColNames$trackingParentCN
