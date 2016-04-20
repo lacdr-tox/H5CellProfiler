@@ -1,14 +1,17 @@
 ---
-# select which modules to run
 pipeline-location: "/home/gerhard/src/H5CellProfiler"
 io:
+  # where your hdf5 and layout file are
   input-directory: "/home/gerhard/test/yaml_r"
+  # where you want the output from the script
   output-directory: "/home/gerhard/test/yaml_r/H5CP_output"
+# select which modules to run
 run:
   - extract-hdf5
   - tracking
 # number of cpu cores to use    
 cores: 16
+# module configuration
 modules:
   # extract information from hdf5 (block 1)
   extract-hdf5:
