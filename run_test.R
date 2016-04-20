@@ -1,4 +1,4 @@
-config.file <- '~/src/H5CellProfiler/example_config.yaml'
+config.file <- '~/test_yaml/config.yml'
 
 prependInputDirectoryToPath <- function (config) {
   config$modules$`extract-hdf5`$input$hdf5 <-
@@ -19,12 +19,12 @@ main <- function() {
   setwd(out.dir)
   source(file.path(config$`pipeline-location`, "H5CellProfiler.R"), chdir = TRUE)
   invisible(lapply(config$run, function (module) {
-      print(paste("Running module", module))
+      print(paste("main - running module", module))
       module.function <- getFunctionForModule(module)
       module.function(config$modules[[module]], config$cores)
   }))
   setwd(old.wd)
-  print("done")
+  print("main - done")
 }
 
 main()
