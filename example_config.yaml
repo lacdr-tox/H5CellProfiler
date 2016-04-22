@@ -1,5 +1,4 @@
 ---
-pipeline-location: "/home/gerhard/src/H5CellProfiler"
 io:
   # where your hdf5 and layout file are
   input-directory: "/home/gerhard/test/yaml_r"
