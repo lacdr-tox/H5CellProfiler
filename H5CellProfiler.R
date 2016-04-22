@@ -16,6 +16,33 @@ library(grid)
 library(shiny)
 library(ggvis)
 
+prependInputDirectoryToPath <- function (config) {
+  config$modules$`extract-hdf5`$input$hdf5 <-
+    file.path(config$io$`input-directory`,
+              config$modules$`extract-hdf5`$input$hdf5)
+  config$modules$`extract-hdf5`$input$layout <-
+    file.path(config$io$`input-directory`,
+              config$modules$`extract-hdf5`$input$layout)
+  return(config)
+}
+
+runPipeline <- function(config.file) {
+  print(config.file)
+  old.wd <- getwd()
+  config <- yaml::yaml.load_file(config.file)
+  config <- prependInputDirectoryToPath(config)
+  out.dir <- config$io$`output-directory`
+  if(!dir.exists(out.dir)) {dir.create(out.dir)}
+  setwd(out.dir)
+  invisible(lapply(config$run, function (module) {
+      print(paste("main - running module", module))
+      module.function <- getFunctionForModule(module)
+      module.function(config$modules[[module]], config$cores)
+  }))
+  setwd(old.wd)
+  print("main - done")
+}
+
 getFunctionForModule <- function(module) {
   switch(module,
          "extract-hdf5"={extractHDF5},
