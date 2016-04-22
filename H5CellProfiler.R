@@ -338,7 +338,7 @@ allTrackDF <- as.data.frame(allTrackDF)
 
 #dit van RData file halen
 
-metaData <- outputList$metaCSVData
+metaData <- kMyVars$metaCSVData
 indRM <- which(unlist(lapply(metaData, function(x) any(is.na(x)))))
 print(c("removing columns from metadata file:" ,indRM))
 if(!length(indRM) < 1) {
