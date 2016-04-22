@@ -1,4 +1,4 @@
-#!/usr/bin/Rscript
+#!/usr/bin/env Rscript
 "This is commandline script for H5CellProfiler
 
 Usage: %s [-h] CONFIG_FILE
