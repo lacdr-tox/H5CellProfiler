@@ -15,6 +15,7 @@ library(reshape2)
 library(grid)
 library(shiny)
 library(ggvis)
+library(yaml)
 
 prependInputDirectoryToPath <- function (config) {
   config$modules$`extract-hdf5`$input$hdf5 <-
@@ -29,7 +30,7 @@ prependInputDirectoryToPath <- function (config) {
 runPipeline <- function(config.file) {
   print(config.file)
   old.wd <- getwd()
-  config <- yaml::yaml.load_file(config.file)
+  config <- yaml.load_file(config.file)
   config <- prependInputDirectoryToPath(config)
   out.dir <- config$io$`output-directory`
   if(!dir.exists(out.dir)) {dir.create(out.dir)}
