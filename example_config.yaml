@@ -53,7 +53,8 @@ modules:
       - 20
       - 20
     min-tracked-frames: 20
-    find-min-identical-parents: true
+    # Can be "disconnect_all" (recommended) or "min_distance"
+    parent-resolve-strategy: "disconnect_all"
     write:
       unique-parents-no-rec: true
       before-combine-tracks: true
