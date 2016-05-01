@@ -35,12 +35,12 @@ modules:
       objects:
         parent-object: "obj_cell"
         # child-objects: use [] for no objects, otherwise use - on the next line (like in features)
-        child-objects: [] 
-        tertiary-object:   
+        child-objects: []
+        tertiary-object:
       # features: #do not define displacement and parent object, these are automatically included
       features:
-        - "obj_cell/Intensity_MeanIntensity_raw_img_nuclei_cropped" 
-        - "obj_cell/TrackObjects_Displacement_30" 
+        - "obj_cell/Intensity_MeanIntensity_raw_img_nuclei_cropped"
+        - "obj_cell/TrackObjects_Displacement_30"
         - "obj_cell/TrackObjects_DistanceTraveled_30"
         - "obj_cell/TrackObjects_IntegratedDistance_30"
         - "obj_cell/TrackObjects_Linearity_30"
