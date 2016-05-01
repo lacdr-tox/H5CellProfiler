@@ -28,9 +28,13 @@ git.info <- getGitInformation(params$repo)
 H5CellProfiler git summary:
 ```{r, echo=FALSE}
 writeLines(git.info$summary)
+if(nchar(git.info$diff) > 0) warning(paste('Head should be "master" but it is "', git.info$branch, '" ask the nerds what this means!', sep = ""))
 ```
 
-`r if(nchar(git.info$diff) == 0) "No local changes" else "Local changes (ask one of the nerds what this means):"`
+`r if(nchar(git.info$diff) == 0) "No local changes" else "Local changes:"`
 ```{r, echo=FALSE}
+if(nchar(git.info$diff) > 0) warning("There should not be any local changes, ask the nerds what this means!")
+```
+```{r, echo=FALSE, comment=NA}
 writeLines(git.info$diff)
 ```
