@@ -1,5 +1,7 @@
 options(stringsAsFactors = FALSE)
 
+pipeline.dir <- getwd()
+
 source("mainFunction.R", chdir = TRUE)
 source("fixTrackingFun.R")
 source("theme_sharp.R")
@@ -27,6 +29,12 @@ prependInputDirectoryToPath <- function (config) {
   return(config)
 }
 
+generateH5CellProfilerVersionReport <- function(pipeline_dir, output_dir) {
+  rmarkdown::render(file.path(pipeline_dir, "H5CellProfiler_version_info.Rmd"), 
+                    output_dir = output_dir,
+                    params = list(repo = pipeline_dir))
+}
+
 runPipeline <- function(config.file) {
   print(config.file)
   old.wd <- getwd()
@@ -34,6 +42,7 @@ runPipeline <- function(config.file) {
   config <- prependInputDirectoryToPath(config)
   out.dir <- config$io$`output-directory`
   if(!dir.exists(out.dir)) {dir.create(out.dir)}
+  generateH5CellProfilerVersionReport(pipeline.dir, out.dir)
   setwd(out.dir)
   invisible(lapply(config$run, function (module) {
       print(paste("main - running module", module))
