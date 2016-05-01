@@ -132,7 +132,6 @@ fixTrackingFun <- function(myDFstukkie, myFeatures, i, kColNames, uniqueWellGrou
         # to the parent object. We want to disconnect these objects from their
         # parents by setting their tracking parent to 0.
         keepMPs <- myAlltrackBothWithMP[!Ind_Min, c("groupInd", trackingObjectNumberCN), with = FALSE]
-        print("DISCONNECTING")
         print(keepMPs)
   
         # Now, by doing a join, find these objects in data.table with the
