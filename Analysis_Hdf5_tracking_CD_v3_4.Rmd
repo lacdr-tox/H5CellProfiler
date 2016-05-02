@@ -181,7 +181,7 @@ if(length(hdf5FileNameL) > 1) {
 registerDoParallel(min(numberCores, length(hdf5FileNameL)))
 
 outputList<- foreach( h5loop = seq_along(hdf5FileNameL ),
-                      .packages = c("rhdf5", "stringr", "data.table")) %dopar% 
+                      .packages = c("rhdf5", "stringr", "data.table", "plyr")) %dopar%
   {
 
      mainFunction( h5loop=h5loop,
