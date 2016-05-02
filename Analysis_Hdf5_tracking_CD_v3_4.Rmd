@@ -170,7 +170,7 @@ oscillation <- FALSE  # TRUE / FALSE  - will extract oscillation related paramet
 
 writeSingleCellDataPerWell <- FALSE # write all single cell data in seperate file per well, takes time
 writeAllSingleCellData<- FALSE  # Only needed of you need the txt file yourselfl writes all single cell data in single txt file.
-numberCores <- min(4, detectCores()) # should be specified after sourcing mainFunction -> weird dependency, should fix
+numberCores <- min(4, detectCores()) 
 dir()
 
 
@@ -194,7 +194,8 @@ outputList<- foreach( h5loop = seq_along(hdf5FileNameL ),
      oscillation=oscillation, 
      writeSingleCellDataPerWell=writeSingleCellDataPerWell, 
      writeAllSingleCellData=writeAllSingleCellData,
-     timeBetweenFrames=timeBetweenFrames, exposureDelay=exposureDelay 
+     timeBetweenFrames=timeBetweenFrames, exposureDelay=exposureDelay,
+     numberCores = numberCores
      )
    }
 } else {
@@ -209,7 +210,8 @@ outputList<- foreach( h5loop = seq_along(hdf5FileNameL ),
      oscillation=oscillation, 
      writeSingleCellDataPerWell=writeSingleCellDataPerWell, 
      writeAllSingleCellData=writeAllSingleCellData,
-     timeBetweenFrames=timeBetweenFrames, exposureDelay =exposureDelay
+     timeBetweenFrames=timeBetweenFrames, exposureDelay =exposureDelay,
+     numberCores = numberCores
      )
 }
   
@@ -1104,8 +1106,7 @@ max_pixel_reconnect3 <- 20
 reconnect_frames <- 2  # over how many frames to connect? can choose 1,2 or 3. 1 means no frame is skipped, 2 then 1 frame is skipped etc. will first perform direct linking then skip 1 frame then 2 to try and reconnect tracks based on maximal considered distance
 skip.wells <- c( )
 minTrackedFrames <- 20 # remove short tracks from data output
-findMinIdenticalParents <- TRUE #  if an object has multiple (tracking) parents - do you want to select the closest one or a random one? 
-findMinIdenticalParents_distance_Feature <- TRUE # (FALSE is not implemented yet) TRUE for distance based selection, FALSE for Feature (myFeature) based selection of parent 
+parent_resolve_strategy <- "min_distance" # Can be "min_distance" to take closest to parent, or "disconnect_all" (recommended) to fix the duplicate parent without connecting any cell to the parent.
 
 summaryStatFunction <- function(x) { mean(x, na.rm = TRUE) } # function(x) { mean(x, na.rm = TRUE) }  or function(x) { quantile(x, 0.8, na.rm = TRUE) } (you can choose which quantile - here it is set to 0.8)
 errorType <- "sd"   #"sd"  or  "cl95"   the cl95 is two sided 95% confidence interval. sd is standard error, half above and half under the average
@@ -1209,7 +1210,11 @@ kColNames[indEnd_] <- paste(kColNames[indEnd_], track_dist, sep="")
 allTrackDF<-foreach(i = seq_along(uniqueWellGroups), 
                     .packages = c("reshape2", "plyr","stringr", "data.table" )) %dopar% {
   myDFstukkie <- myDT[ uniqueWellGroups[ i ]]
-  fixTrackingFun(myDFstukkie, myFeatures, i)
+  fixTrackingFun(myDFstukkie, myFeatures, i, kColNames, uniqueWellGroups,
+                 writeUniqueParentsNoRec, writeBeforeCombineTracks, reconnect_tracks,
+                 max_pixel_reconnect1, max_pixel_reconnect2, max_pixel_reconnect3,
+                 writeAfterFirstConnect, writeAfterSecondReconnect, writeAfterThirdReconnect,
+                 reconnect_frames, minTrackedFrames, writeSingleCellDataPerWell, parent_resolve_strategy)
 }
 
 

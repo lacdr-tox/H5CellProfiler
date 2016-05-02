@@ -50,7 +50,7 @@ verifyInputFun <- function(trackedObject=trackedObject, trackingLabel=trackingLa
   hdf5InWd <- grepl( hdf5FileName, dir( ) )
   if (  all( xlsInWD == FALSE ) | all( hdf5InWd  == FALSE ) ) 
   {
-    stop( "hdf5 or plate layout xls file not in current working directory." )
+    #stop( "hdf5 or plate layout xls file not in current working directory." )
   }
   # check if the dates of .h5 and xls plate layout match
   dateXls <- str_match( plateMDFileName, "[0-9]{4}[:blank: \\_ \\-]{1}[0-9]{2}[:blank: \\_ \\-]{1}[0-9]{2}" )
