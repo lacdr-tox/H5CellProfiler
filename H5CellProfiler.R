@@ -42,6 +42,7 @@ runPipeline <- function(config.file) {
   config <- prependInputDirectoryToPath(config)
   out.dir <- config$io$`output-directory`
   if(!dir.exists(out.dir)) {dir.create(out.dir)}
+  file.copy(config.file, out.dir)
   generateH5CellProfilerVersionReport(pipeline.dir, out.dir)
   setwd(out.dir)
   invisible(lapply(config$run, function (module) {
