@@ -1,0 +1,40 @@
+---
+title: "H5CellProfiler version info"
+date: "`r Sys.Date()`"
+output: html_document
+params:
+  repo: ""
+---
+
+```{r check repo param, include= FALSE}
+stopifnot(nchar(params$repo) > 0)
+```
+
+```{r source git utils, include=FALSE}
+git.utils.file <- file.path(params$repo, "utils", "git.R")
+stopifnot(file.exists(git.utils.file))
+source(git.utils.file, chdir = TRUE)
+```
+
+R version information:
+```{r R information}
+sessionInfo()
+```
+
+```{r H5CellProfiler git info, echo=FALSE}
+git.info <- getGitInformation(params$repo)
+```
+
+H5CellProfiler git summary:
+```{r, echo=FALSE}
+writeLines(git.info$summary)
+if(git.info$branch != "master") warning(paste('Head should be "master" but it is "', git.info$branch, '" ask the nerds what this means!', sep = ""))
+```
+
+`r if(nchar(git.info$diff) == 0) "No local changes" else "Local changes:"`
+```{r, echo=FALSE}
+if(nchar(git.info$diff) > 0) warning("There should not be any local changes, ask the nerds what this means!")
+```
+```{r, echo=FALSE, comment=NA}
+writeLines(git.info$diff)
+```
