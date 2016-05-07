@@ -30,7 +30,7 @@ prependInputDirectoryToPath <- function (config) {
 }
 
 generateH5CellProfilerVersionReport <- function(pipeline_dir, output_dir) {
-  rmarkdown::render(file.path(pipeline_dir, "H5CellProfiler_version_info.Rmd"), 
+  rmarkdown::render(file.path(pipeline_dir, "H5CellProfiler_version_info.Rmd"),
                     output_dir = output_dir,
                     params = list(repo = pipeline_dir))
 }
@@ -65,7 +65,7 @@ getFunctionForModule <- function(module) {
 extractHDF5 <- function(config, cores) {
 
 # Each hdf5 file contains 1 or multiple plate-based data (i.e. do not divide data from 1 plate in multiple h5 files unless different time points)
-hdf5FileNameL <- config$input$hdf5 # mainFunction will loop through this vector, at the end rbinding the individual outputs. 
+hdf5FileNameL <- config$input$hdf5 # mainFunction will loop through this vector, at the end rbinding the individual outputs.
 
 # each hdf5 gets it's own metadata info. Either a path WITH the "Image/" character or a manualy defined string WITHOUT the "/" character
 # If each h5 file has identical metadata 1 entry is sufficient. Else provide entry for each h5 file
@@ -73,7 +73,7 @@ hdf5FileNameL <- config$input$hdf5 # mainFunction will loop through this vector,
 # these metadata variables should be defined in metadata layout file if they vary within the h5 file, if not needed in the metadata file (so metadata is provided in these variables) - then put NA's in the metadata file
 locationID <- config$metadata$`location-id`  # well/ location metadata
 plateID <- config$metadata$`plate-id` # PlateID must always be provided (either manual or h5 paths)- here AND in layout file: becuase plateID is used to couple metadata plate layout file.
-imageID <- config$metadata$`image-id` # Image/Metadata_  ... image number (obtained from image file name ) 
+imageID <- config$metadata$`image-id` # Image/Metadata_  ... image number (obtained from image file name )
 timeID <- config$metadata$`time-id` # timeID, either hdf5 path, or vector of numbers according to hdf5 files (each hdf5 is then a time point) So capture time point in h5 file if needed. Or defined in metadata layout file
 replID <- config$metadata$`replicate-id` # replicate ID (are the plate replicates of each other? (just easy for plotting options))
 locationID <- if(length(locationID) == 0) c("") else locationID
@@ -81,8 +81,8 @@ plateID    <- if(length(plateID) == 0)    c("") else plateID
 imageID    <- if(length(imageID) == 0)    c("") else imageID
 timeID     <- if(length(timeID) == 0)     c("") else timeID
 replID     <- if(length(replID) == 0)     c("") else replID
-exposureDelay <- config$metadata$`exposure-delay` # hh:mm 
-timeBetweenFrames <- config$metadata$`time-between-frame` # hh:mm:ss 
+exposureDelay <- config$metadata$`exposure-delay` # hh:mm
+timeBetweenFrames <- config$metadata$`time-between-frame` # hh:mm:ss
 #define the paths of the measurements you are interested in, leave empty if you dont need so many: full full full empty empty empty.....  NOT: full empty full.....
 # this is for measurements: tracking will be handled automatically
 
@@ -90,7 +90,7 @@ timeBetweenFrames <- config$metadata$`time-between-frame` # hh:mm:ss
 # only add the object/feature part for example:  "myObject/Inensity_MeanIntensity_img"
 
 myFeaturePathsA <- as.list(config$metadata$features)
-  # tab delimted text file with metadata headers:    well  treatment  dose_uM	control	cell_line 
+  # tab delimted text file with metadata headers:    well  treatment  dose_uM	control	cell_line
 #the control is 1 or `1 where `1 is a control (just used for some extra coloring in plots)
 plateMDFileName <- config$input$layout
 
@@ -127,13 +127,13 @@ outputList<- foreach( h5loop = seq_along(hdf5FileNameL ),
 
      mainFunction( h5loop=h5loop,
      hdf5FileNameL=hdf5FileNameL,locationID=locationID, timeID=timeID, plateID=plateID,
-     imageID=imageID, replID = replID, 
+     imageID=imageID, replID = replID,
      myFeaturePathsA=myFeaturePathsA, plateMDFileName=plateMDFileName,
-     parentObject=parentObject, childObject1=childObject1, childObject2=childObject2, 
-     childObject3=childObject3, childObject4=childObject4, childObject5=childObject5, 
+     parentObject=parentObject, childObject1=childObject1, childObject2=childObject2,
+     childObject3=childObject3, childObject4=childObject4, childObject5=childObject5,
      tertiaryObject=tertiaryObject, multiplePerParentFunction=multiplePerParentFunction,
-     oscillation=oscillation, 
-     writeSingleCellDataPerWell=writeSingleCellDataPerWell, 
+     oscillation=oscillation,
+     writeSingleCellDataPerWell=writeSingleCellDataPerWell,
      writeAllSingleCellData=writeAllSingleCellData,
      timeBetweenFrames=timeBetweenFrames, exposureDelay=exposureDelay,
      numberCores = numberCores
@@ -143,20 +143,20 @@ outputList<- foreach( h5loop = seq_along(hdf5FileNameL ),
   h5loop <- 1
     outputList <- mainFunction( h5loop=h5loop,
      hdf5FileNameL=hdf5FileNameL,locationID=locationID, timeID=timeID, plateID=plateID,
-     imageID=imageID, replID = replID, 
+     imageID=imageID, replID = replID,
      myFeaturePathsA=myFeaturePathsA, plateMDFileName=plateMDFileName,
-     parentObject=parentObject, childObject1=childObject1, childObject2=childObject2, 
-     childObject3=childObject3, childObject4=childObject4, childObject5=childObject5, 
+     parentObject=parentObject, childObject1=childObject1, childObject2=childObject2,
+     childObject3=childObject3, childObject4=childObject4, childObject5=childObject5,
      tertiaryObject=tertiaryObject, multiplePerParentFunction=multiplePerParentFunction,
-     oscillation=oscillation, 
-     writeSingleCellDataPerWell=writeSingleCellDataPerWell, 
+     oscillation=oscillation,
+     writeSingleCellDataPerWell=writeSingleCellDataPerWell,
      writeAllSingleCellData=writeAllSingleCellData,
      timeBetweenFrames=timeBetweenFrames, exposureDelay =exposureDelay,
      numberCores = numberCores
      )
 }
-  
-  
+
+
 save(outputList, file = 'outputList.Rdata')
 }
 
@@ -181,7 +181,7 @@ if(length(unlist(lapply( lapply(outputList, names),str_match_all, "myDT") )) > 1
       all.identical <- function(x) all(mapply(identical, x[1], x[-1]))
       if(!all.identical(testColN))
         {
-        stop("outputlist does have tables with identical column names/ 
+        stop("outputlist does have tables with identical column names/
              object names, manually rbind the outputlist")
         }
 
@@ -196,11 +196,11 @@ myDFo <- rbindlist(outputListmyDT)
   kMyVars <- outputList[-1]
 }
 
- 
+
   kColNames <- kMyVars$kColNames
   dataFileName <- gsub(".txt", "",kMyVars$plateMDFileName)
 
-myFeatures <- gsub("/", "_", 
+myFeatures <- gsub("/", "_",
                      gsub("^(Measurements/[0-9]{4}(-[0-9]{2}){5}/)", "", kMyVars$myFeaturePathsA)
                      )
 myFeatures <- c(myFeatures, "imageCountTracked")
@@ -272,11 +272,11 @@ uniqueWells<- factor(uniqueWells)
 if( length(uniqueWells) < numberCores) {
   stop("Reduce the number of cores")
 }
- 
+
 jumpInd <-length(uniqueWells) %/% numberCores
 uniqueWellsLevels <- rep(1:numberCores, each = jumpInd)
 #add some extra at the end in case levels is shorter:
-extraEnd <-  length(uniqueWells) - length(uniqueWellsLevels) 
+extraEnd <-  length(uniqueWells) - length(uniqueWellsLevels)
 uniqueWellsLevels<- c(uniqueWellsLevels,  rep(uniqueWellsLevels[length(uniqueWellsLevels)], extraEnd))
 if(length(uniqueWellsLevels) != length(uniqueWells) | !all(sort(uniqueWellsLevels) == uniqueWellsLevels)) {
   stop("making uniqueWellLevels failed")
@@ -294,8 +294,8 @@ cellNlist <- foreach ( cellC = seq_along(1:numberCores ), .packages = 'data.tabl
     partmyDT <- myDT[ind,]
     out.min <- partmyDT[, min(imageCountTracked), by = locationID]
     out.max <- partmyDT[, max(imageCountTracked), by = locationID]
-    setnames(out.min, 'V1', "minimum number of tracked objects") 
-    setnames(out.max, 'V1', "maximum number of tracked objects") 
+    setnames(out.min, 'V1', "minimum number of tracked objects")
+    setnames(out.max, 'V1', "maximum number of tracked objects")
     setkey(out.min,locationID)
     setkey(out.max,locationID)
     out.both <- out.min[out.max]
@@ -304,10 +304,10 @@ cellNlist <- foreach ( cellC = seq_along(1:numberCores ), .packages = 'data.tabl
 cellNlist <- rbind.fill(cellNlist)
 write.table(cellNlist, file = 'trackedObject_counts.txt' ,  row.names = FALSE, sep = "\t")
 #rm("out.min", "out.max","out.both", "cellNlist", "partmyDFo")
-#selFeatures <- gsub("\\/", "_",  str_match(  unlist(myFeaturePathsA), "([^/]*[\\/][.]*[^/]*)$")[, 1 ] ) 
-  
+#selFeatures <- gsub("\\/", "_",  str_match(  unlist(myFeaturePathsA), "([^/]*[\\/][.]*[^/]*)$")[, 1 ] )
+
  # selFeatures <- selFeatures[!is.na(selFeatures)]
-  
+
 setkey(myDT, locationID)
 
 #TODO: comment this away/ remove this once not needed anymore
@@ -324,7 +324,7 @@ kColNames[indEnd_] <- paste(kColNames[indEnd_], track_dist, sep="")
 
 
 
-allTrackDF<-foreach(i = seq_along(uniqueWellGroups), 
+allTrackDF<-foreach(i = seq_along(uniqueWellGroups),
                     .packages = c("reshape2", "plyr","stringr", "data.table" )) %dopar% {
   myDFstukkie <- myDT[ uniqueWellGroups[ i ]]
   fixTrackingFun(myDFstukkie, myFeatures, i, kColNames, uniqueWellGroups,
@@ -353,7 +353,7 @@ metaData <- kMyVars$metaCSVData
 indRM <- which(unlist(lapply(metaData, function(x) any(is.na(x)))))
 print(c("removing columns from metadata file:" ,indRM))
 if(!length(indRM) < 1) {
-metaData[, eval(indRM):= NULL]  
+metaData[, eval(indRM):= NULL]
 }
 
 
@@ -388,7 +388,7 @@ head(allTrackDF)
 
 bufferList = list()
 for( i in seq_along(zehFeats)){
-  
+
 bufferList[[i]] <- allTrackDF[  allTrackDF$.id == zehFeats[i], ][ind,]
 }
 bufferDF <- rbind.fill(bufferList)
