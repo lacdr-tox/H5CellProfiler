@@ -17,7 +17,8 @@ findScriptPath <- function(){
 
 # Function to install the pipeline dependencies
 installDependencies <- function(){
-  installPackages(c('docopt', 'stringr', 'plyr', 'data.table', 'doParallel', 'ggplot2', 'reshape2', 'grid', 'shiny', 'ggvis', 'yaml', 'rmarkdown', 'git2r'))
+  #installPackages(c('docopt', 'stringr', 'plyr', 'data.table', 'doParallel', 'ggplot2', 'reshape2', 'grid', 'shiny', 'ggvis', 'yaml', 'rmarkdown', 'git2r'))
+  installPackages(c('docopt', 'stringr', 'plyr', 'data.table', 'doParallel', 'ggplot2', 'reshape2', 'grid', 'shiny', 'ggvis', 'yaml'))
   installBiocLitePackages(c('rhdf5'))
 }
 
