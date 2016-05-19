@@ -324,7 +324,7 @@ kColNames[indEnd_] <- paste(kColNames[indEnd_], track_dist, sep="")
 
 
 
-allTrackDF<-foreach(i = seq_along(uniqueWellGroups),
+allTrackDF<-foreach(i = seq_along(uniqueWellGroups), .export=c("fixTrackingFun"),
                     .packages = c("reshape2", "plyr","stringr", "data.table" )) %dopar% {
   myDFstukkie <- myDT[ uniqueWellGroups[ i ]]
   fixTrackingFun(myDFstukkie, myFeatures, i, kColNames, uniqueWellGroups,
