@@ -34,7 +34,7 @@ nChannel <-2
 #===================# end input from user========================================================
 #================================================================================================
 
-imageFiles <- dir( imageDir );
+imageFiles <- dir( imageDir, pattern = '*.tif');
 # create the entire 384 well plate:
 
   
