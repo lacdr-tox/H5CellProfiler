@@ -92,7 +92,7 @@ imagedPlate <- defaultPlate[ rowStart_ind : rowbottomRight_ind  ,  colStart_ind 
 nWells <- ( colTopRight_ind - colStart_ind + 1 )  * ( rowbottomRight_ind - rowStart_ind + 1 );
 
 timeString <- unique(str_match( imageFiles, "(t[0-9]{1,3}.tif)$")[, 1])
-channelString <- unique(str_match( imageFiles, "(xy[0-9]{1,4}c[1-4]{1}\\w{,3}.tif)$")[, 1])
+channelString <- unique(str_match( imageFiles, "(xy[0-9]{1,4}c[1-4]{1}\\w{0,3}.tif)$")[, 1])
 
 nTimePoints <- length( timeString);
 nImages <-length(str_match(imageFiles, "(\\w*.tif)$")[,1])
