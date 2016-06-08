@@ -30,11 +30,15 @@ installDependencies()
 
 # Now that dependencies are installed we can use docopt
 library('docopt')
+if(packageVersion("docopt") >= "0.4.5") {
+  doc <- sprintf(doc.template, script.name)
+  my.opts <- docopt(doc)
 
-doc <- sprintf(doc.template, script.name)
-my.opts <- docopt(doc)
-
-config.file <- my.opts[['CONFIG_FILE']]
+  config.file <- my.opts[['CONFIG_FILE']]
+} else {
+  # Temporary workaround, before 0.4.5 spaces in file names are not correctly picked up
+  config.file <- commandArgs(TRUE)[1]
+}
 config.path <- normalizePath(config.file)
 
 source(file.path(script.dir, "H5CellProfiler.R"), chdir = TRUE)
