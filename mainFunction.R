@@ -355,6 +355,13 @@ myDFrawImage <-myDFrawImage[currImageData]
 
 metaCSVData <- read.table( plateMDFileName, sep = "\t", header = TRUE, comment.char = "")
 metaCSVData<- as.data.table(metaCSVData)
+
+expectedColumns <- c('locationID', 'treatment', 'dose_uM', 'control', 'cell_line', 'plateID', 'timeID', 'replID')
+if(any(colnames(metaCSVData) != expectedColumns)) {
+  stop(paste('wrong columns in layout file\n\texpected: ', paste(expectedColumns, collapse = ", "),
+             "\n\t     got: ", paste(colnames(metaCSVData), collapse = ", "), '\n'))
+}
+
 setkey(metaCSVData, 'treatment')
 
 # only use data that is defined in metadata layout file, in treatment column

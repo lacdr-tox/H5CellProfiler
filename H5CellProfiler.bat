@@ -55,7 +55,7 @@ ECHO Added Rscript to PATH, continuing...
 
 for /f "delims=" %%I in ('powershell -noprofile "iex (${%~f0} | out-string)"') do (
     echo Selected %%~I
-	Rscript H5CellProfiler_Rscript.R %%~I
+	Rscript H5CellProfiler_Rscript.R "%%~I"
 )
 
 pause
