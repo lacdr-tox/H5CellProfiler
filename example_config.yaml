@@ -14,6 +14,7 @@ cores: 16
 modules:
   # extract information from hdf5 (block 1)
   extract-hdf5:
+    show-results: TRUE
     input:
       hdf5:
         - "20160403_GB01_03_cp_output_hcc38.h5"
