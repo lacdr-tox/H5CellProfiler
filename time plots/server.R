@@ -1,7 +1,6 @@
 
 # server.R
 source("../theme_sharp.R")
-source('global.R', local=TRUE)
 values <- reactiveValues()
 
 ## TODO: multiple features plotten
