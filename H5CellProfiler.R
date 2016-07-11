@@ -6,6 +6,8 @@ source("mainFunction.R", chdir = TRUE)
 source("fixTrackingFun.R")
 source("theme_sharp.R")
 source("countCellFun.R")
+source("shinyAppUI.R")
+source("shinyAppServer.R")
 
 library(rhdf5)
 library(stringr)
@@ -158,6 +160,8 @@ extractHDF5 <- function(config, cores) {
 
 
   save(outputList, file = 'outputList.Rdata')
+
+  if(config$`show-results`) {browserFun(outputList)}
 }
 
 
@@ -395,4 +399,60 @@ trackingFun <- function(config, cores) {
 
   write.table(bufferDF, file = "reorderedTrackData.txt", sep ="\t", row.names = FALSE)
   write.table(directionality.data, file = "directionality.txt", sep ="\t", row.names= FALSE)
+}
+
+browserFun <- function(outputList){
+
+  #TODO this should be done better
+
+  if(length(unlist(lapply( lapply(outputList, names),str_match_all, "myDT") )) > 1) {
+    outputListmyDT<- lapply(outputList, "[[", "myDT")
+    testColN<- lapply(outputListmyDT, function(x) {(  (names(x)))} )
+    all.identical <- function(x) all(mapply(identical, x[1], x[-1]))
+    if(!all.identical(testColN))
+    {
+      myDFo <- do.call('rbind', outputListmyDT)
+
+    } else{
+      myDFo <- rbindlist(outputListmyDT)
+
+    }
+    outputListsumData <- lapply(outputList, "[[", "sumData")
+
+    sumData <- rbindlist(outputListsumData)
+
+    kMyVars <- outputList[length(outputList)][[1]]
+    kMyVars$myDT <- NULL
+  } else {
+    outputListmyDT <- outputList$myDT
+    myDFo <- outputListmyDT
+    kMyVars <- outputList[-1]
+    sumData<- outputList$sumData
+
+  }
+
+  kColNames <- kMyVars$kColNames
+  dataFileName <- gsub(".txt", "",kMyVars$plateMDFileName)
+
+  myFeatures <- gsub("/", "_",
+                     gsub("^(Measurements/[0-9]{4}(-[0-9]{2}){5}/)", "", kMyVars$myFeaturePathsA)
+  )
+
+  # TODO fix this global stuff mess
+  myDFo <<- myDFo
+  sumData <<- sumData
+
+  app <- shinyApp(
+    ui = getShinyUI(myDFo, kColNames, sumData, myFeatures),
+    server = getShinyServer(),
+    onStart = function() {
+      values <<- reactiveValues()
+    }
+  )
+
+  print('Running Shiny App...')
+  print('You can stop the Shiny App by clicking the red Exit buttons in the webbrowser')
+  print('If you\'re stuck here, navigate to the address mentioned below to exit the Shiny App')
+
+  runApp(app, launch.browser = TRUE)
 }
