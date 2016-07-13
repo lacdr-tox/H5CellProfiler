@@ -8,21 +8,22 @@
 #
 
 library(shiny)
+library(DT)
 library(shinyFiles)
 library(parallel)
+source("../utils/cphdf5.R")
+source("utils.R")
+source("trackingModule.R")
 
-invertVector <- function(x) {
-  # Implementation from searchable package
-  if( is.null( names(x) ) ) stop( "vector does not have names.")
-  v <- names(x)
-  names(v) <- as.character(x)
-  return(v)
-}
 
 modules <- c("extract-hdf5", "tracking")
 module_labels <- c("extract-hdf5" = "Extract HDF5", "tracking" = "Tracking")
 default_modules <- c("extract-hdf5")
 max_cores <- detectCores()
+
+
+selected_h5 <- NULL
+selected_metadata <- ""
 
 getHelpTextForModule <- function(module) {
   return(paste("Here you can set the settings for the", module_labels[[module]], "module"))
@@ -58,11 +59,12 @@ ui <- shinyUI(fluidPage(
            helpText(getHelpTextForModule("extract-hdf5")),
            uiOutput("hdf5s"),
            uiOutput("metatsv"),
-           uiOutput("render-meta"),
+           dataTableOutput("view-meta"),
            checkboxInput("show-results", "Show results in browser")
          ),
          tabPanel(module_labels[["tracking"]],
-           helpText(getHelpTextForModule("tracking"))
+           helpText(getHelpTextForModule("tracking")),
+           trackingUI("tracking1")
          )
        )
      )
@@ -94,14 +96,21 @@ server <- shinyServer(function(input, output, session) {
     }
   })
 
-  h5files_in_inputdir <- reactive(dir(inputDirectory(), "*.h5"))
+  getH5Files <- function() {
+    dir(inputDirectory(), "*.h5")
+  }
+
+  h5files_in_inputdir <- reactivePoll(1000, session, getH5Files, getH5Files)
 
   output$hdf5s <- renderUI({
     tags <- list()
 
+    choices <- h5files_in_inputdir()
+    selected <- intersect(choices, selected_h5)
+
     tags[["h5check"]] <- checkboxGroupInput("h5files", label = "HDF5 files to use:",
-                       choices = h5files_in_inputdir(),
-                       selected = if(length(h5files_in_inputdir()) == 1) h5files_in_inputdir() else NULL)
+                       choices = choices,
+                       selected = selected)
     if(length(inputDirectory()) == 0) {
       # No input directory set
       tags[["nodirset"]] <- helpText("Please set input directory in the left panel")
@@ -114,13 +123,19 @@ server <- shinyServer(function(input, output, session) {
     do.call(tagList, tags)
   })
 
-  tsvfiles_in_inputdir <- reactive(dir(inputDirectory(), "*.tsv|*.txt"))
+  getPossibleMetadataFiles <- function() {
+    dir(inputDirectory(), "*.tsv|*.txt")
+  }
+
+  tsvfiles_in_inputdir <- reactivePoll(1000, session, getPossibleMetadataFiles, getPossibleMetadataFiles)
 
   output$metatsv <- renderUI({
     tags <- list()
 
+    choices <- c("None selected" = "", tsvfiles_in_inputdir())
+    selected <- ifelse(selected_metadata %in% choices, selected_metadata, "")
     tags[["tsvcheck"]] <- radioButtons("tsvfile", label = "Metadata TSV file to use:",
-                       choices = c("None selected" = "", tsvfiles_in_inputdir()))
+                       choices = choices, selected = selected)
     if(length(inputDirectory()) == 0) {
       # No input directory set
       tags[["nodirset"]] <- helpText("Please set input directory in the left panel")
@@ -148,17 +163,19 @@ server <- shinyServer(function(input, output, session) {
     read.table(metadatafile(), sep = "\t", header = TRUE, comment.char = "")
   })
 
-  output$`render-meta` <- renderUI({
-    if(is.null(metadata())) {
-      return(NULL)
-    }
-    tableOutput("view-meta")
+  output$`view-meta` <- renderDataTable(metadata(),
+                                        options = list(
+                                          pageLength = 5,
+                                          lengthMenu = c(5, 10, 15, 20)))
+  observe({
+    selected_h5 <<- input$h5files
   })
 
-  output$`view-meta` <- renderTable({
-    head(metadata())
+  observe({
+    selected_metadata <<- input$tsvfile
   })
-
+  tracking_config <- callModule(tracking, "tracking1")
+  observe(print(tracking_config()))
 })
 
 
