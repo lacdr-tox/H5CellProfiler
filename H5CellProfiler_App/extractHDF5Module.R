@@ -4,7 +4,12 @@ source('utils.R')
 ### GLOBAL STUFF ###
 
 selected_h5 <- NULL
-default_layout_option <- c("Select a layout files" = "")
+default_layout_option <- c("Select a layout file" = "")
+default_location_id_option <- c("Select location ID" = "")
+default_plate_id_option <- c("Select plate ID" = "")
+default_image_id_option <- c("Select image ID" = "")
+default_time_id_option <- c("Select time ID" = "")
+default_replicate_id_option <- c("Select replicate ID" = "", "None" = "")
 
 ### HDF5 UI ####
 
@@ -22,6 +27,11 @@ extractHDF5UI <- function(id) {
     selectInput(ns("tsvfile"), label = NULL, choices = default_layout_option),
     bsAlert(ns("layout_reading_alert")),
     uiOutput(ns("preview_layout")),
+    h4("Metadata"),
+    helpText(HTML("Here you can set the metadata. The metadata options are extracted from the
+                  <strong>first</strong> HDF5 file and the layout file.")),
+    selectInput(ns("location_id", label = "Location ID", choices = default_location_id_option)),
+    selectInput(ns("plate_id", label = "Plate ID", choices = default_plate_id_option)),
     h4("Results"),
     helpText("It is possible to show the information extracted from the HDF5 files in the browser.
              In this way you can get an overview of your data, and do some preliminary analysis.
