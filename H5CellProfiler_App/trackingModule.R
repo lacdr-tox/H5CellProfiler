@@ -28,9 +28,11 @@ default_reconnect_over_frames <- 0
 
 full_width <- validateCssUnit("100%")
 
+stored_reconnect_distances <- list(0,0,0)
+
 ### TRACKING UI ###
 
-trackingUI <- function(id){
+trackingUI <- function(id) {
   ns <- NS(id)
 
   tagList(
@@ -42,18 +44,18 @@ trackingUI <- function(id){
     radioButtons(ns("parent_resolve_strategy"), NULL, invertVector(unique_parent_solutions),
                  selected = preferred_unique_parent_solution, width = full_width),
     h4("Reconnect tracks"),
-    helpText(HTML("These settings control if and how tracks should be reconnected. <strong>Use with
-                  caution.</strong>")),
+    helpText(HTML("These settings control if and how tracks should be reconnected.")),
+    bsAlert(ns("reconnect_tracks_alert")),
     selectInput(ns("reconnect_over_frames"), "Maximum number of frames to reconnect over:",
                 choices = reconnect_over_frames,
                 selected = default_reconnect_over_frames,
                 width = full_width),
+    bsAlert(ns("reconnect_slider_alert")),
     uiOutput(ns("reconnect_distance")),
     h4("Discard short tracks"),
     helpText(HTML("This setting sets the minimum desired track length, tracks that have a shorter
-                  length (after reconnecting) will be thrown away. <strong>Only increase this value
-                  if you know what you're doing! You can always filter out short tracks in a later
-                  analysis.</strong>")),
+                  length (after reconnecting) will be thrown away.")),
+    bsAlert(ns("discard_short_tracks_alert")),
     numericInput(ns("min_tracked_frames"), label = "Minimum track length:", value = 1, min = 1,
                  step = 1),
     h4("Output files"),
@@ -67,18 +69,32 @@ trackingUI <- function(id){
   )
 }
 
-
-stored_reconnect_distances <- list(0,0,0)
-
 ### TRACKING SERVER ###
 
 tracking <- function(input, output, session){
   ns <- session$ns
 
+  createAlert(session, ns("reconnect_tracks_alert"), "reconnect_tracks_alert", content =
+                HTML("<strong>Warning!</strong> Agressive reconnecting might mask tracking problems
+                     and introduce fake effects, use with caution."), style = "warning", dismiss =
+                FALSE)
+  createAlert(session, ns("discard_short_tracks_alert"), "discard_short_tracks_alert", content =
+                HTML("<strong>Warning</strong> Discarding track data is potentially dangerous. You
+                     can always filter out short tracks in a later analysis."), style = "warning",
+              dismiss = FALSE)
+
   output$reconnect_distance <- renderUI({
     post <- " pixels"
     pre_label <- "Maximal distance for reconnecting over"
-    if(input$reconnect_over_frames == 0) {return(NULL)}
+    if(input$reconnect_over_frames == 0) {
+      closeAlert(session, "reconnect_slider_alert")
+      return(NULL)
+    }
+    createAlert(session, ns("reconnect_slider_alert"), "reconnect_slider_alert",
+                content = HTML("<strong>Warning</strong> Because of a bug in Shiny these sliders
+                               can reset when you change the directories in the left panel."),
+                style = "warning", dismiss = FALSE)
+
     tags <- list()
     if(input$reconnect_over_frames > 0) {
       tags[["reconnect_1"]] <- sliderInput(ns("reconnect_1"), paste(pre_label, "1 frame"), 0, 100,
@@ -142,6 +158,7 @@ tracking <- function(input, output, session){
     as.list(are_names_selected)
   })
 
+  # build the complete config for the tracking module
   tracking_config <- reactive({
     list(
     "parent-resolve-strategy" = input$parent_resolve_strategy,

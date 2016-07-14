@@ -8,12 +8,15 @@
 #
 
 library(shiny)
-library(DT)
+library(shinyBS)
 library(shinyFiles)
+library(DT)
 library(parallel)
+
 source("../utils/cphdf5.R")
 source("utils.R")
 source("trackingModule.R")
+source("extractHDF5Module.R")
 
 
 modules <- c("extract-hdf5", "tracking")
@@ -22,14 +25,11 @@ default_modules <- c("extract-hdf5")
 max_cores <- detectCores()
 
 
-selected_h5 <- NULL
-selected_metadata <- ""
 
 getHelpTextForModule <- function(module) {
   return(paste("Here you can set the settings for the", module_labels[[module]], "module"))
 }
 
-# Define UI for application that draws a histogram
 ui <- shinyUI(fluidPage(
 
    # Application title
@@ -45,7 +45,7 @@ ui <- shinyUI(fluidPage(
        verbatimTextOutput('output-directory'),
 
        sliderInput("cores", "CPU cores to use:",
-                   min=1, max=max_cores, value=max_cores, step=1),
+                   min=1, max=max_cores, value=max_cores, step=1, post = " cores"),
 
        checkboxGroupInput("modules", label = "Modules to run:",
                           choices = as.list(invertVector(module_labels)),
@@ -57,10 +57,7 @@ ui <- shinyUI(fluidPage(
        tabsetPanel(
          tabPanel(module_labels[["extract-hdf5"]],
            helpText(getHelpTextForModule("extract-hdf5")),
-           uiOutput("hdf5s"),
-           uiOutput("metatsv"),
-           dataTableOutput("view-meta"),
-           checkboxInput("show-results", "Show results in browser")
+           extractHDF5UI("extract_hdf5_1")
          ),
          tabPanel(module_labels[["tracking"]],
            helpText(getHelpTextForModule("tracking")),
@@ -75,14 +72,19 @@ ui <- shinyUI(fluidPage(
    #actionButton("runConfig", "Run pipeline with config")
 ))
 
-# Define server logic required to draw a histogram
 server <- shinyServer(function(input, output, session) {
   roots <- getVolumes()
 
   shinyDirChoose(input, 'input-directory', session=session, roots = roots)
   shinyDirChoose(input, 'output-directory', session=session, roots = roots)
 
-  inputDirectory <- reactive(parseDirPath(roots, input$`input-directory`))
+  inputDirectory <- reactive({
+    if(is.null(input$`input-directory`)) {
+      #return(NULL)
+      return('~/test/test_yaml')
+    }
+    parseDirPath(roots, input$`input-directory`)
+    })
   outputDirectory <- reactive(parseDirPath(roots, input$`output-directory`))
 
   output$`input-directory` <- renderText({inputDirectory()})
@@ -96,87 +98,12 @@ server <- shinyServer(function(input, output, session) {
     }
   })
 
-  getH5Files <- function() {
-    dir(inputDirectory(), "*.h5")
-  }
-
-  h5files_in_inputdir <- reactivePoll(1000, session, getH5Files, getH5Files)
-
-  output$hdf5s <- renderUI({
-    tags <- list()
-
-    choices <- h5files_in_inputdir()
-    selected <- intersect(choices, selected_h5)
-
-    tags[["h5check"]] <- checkboxGroupInput("h5files", label = "HDF5 files to use:",
-                       choices = choices,
-                       selected = selected)
-    if(length(inputDirectory()) == 0) {
-      # No input directory set
-      tags[["nodirset"]] <- helpText("Please set input directory in the left panel")
-    } else if(length(h5files_in_inputdir()) == 0) {
-      # Input directory set, but no HDF5 files
-      tags[["noh5indir"]] <- helpText("No HDF5 files in input directory")
-    }
-
-    # Convert our list of 'tags' to a proper tagList
-    do.call(tagList, tags)
-  })
-
-  getPossibleMetadataFiles <- function() {
-    dir(inputDirectory(), "*.tsv|*.txt")
-  }
-
-  tsvfiles_in_inputdir <- reactivePoll(1000, session, getPossibleMetadataFiles, getPossibleMetadataFiles)
-
-  output$metatsv <- renderUI({
-    tags <- list()
-
-    choices <- c("None selected" = "", tsvfiles_in_inputdir())
-    selected <- ifelse(selected_metadata %in% choices, selected_metadata, "")
-    tags[["tsvcheck"]] <- radioButtons("tsvfile", label = "Metadata TSV file to use:",
-                       choices = choices, selected = selected)
-    if(length(inputDirectory()) == 0) {
-      # No input directory set
-      tags[["nodirset"]] <- helpText("Please set input directory in the left panel")
-    } else if(length(tsvfiles_in_inputdir()) == 0) {
-      # Input directory set, but no possible tsv files
-      tags[["notsvindir"]] <- helpText("No tsv/txt files in input directory")
-    }
-
-    # Convert our list of 'tags' to a proper tagList
-    do.call(tagList, tags)
-  })
-
-  metadatafile <- reactive({
-    if (length(inputDirectory()) == 0 || !(!is.null(input$tsvfile) && !nchar(input$tsvfile) == 0) ) {
-      return(NULL)
-    }
-    file.path(inputDirectory(), input$tsvfile)
-  })
-
-  metadata <- reactive({
-    if (is.null(metadatafile())) {
-      # User has not uploaded a file yet
-      return(NULL)
-    }
-    read.table(metadatafile(), sep = "\t", header = TRUE, comment.char = "")
-  })
-
-  output$`view-meta` <- renderDataTable(metadata(),
-                                        options = list(
-                                          pageLength = 5,
-                                          lengthMenu = c(5, 10, 15, 20)))
-  observe({
-    selected_h5 <<- input$h5files
-  })
-
-  observe({
-    selected_metadata <<- input$tsvfile
-  })
+  extractHDF5_config  <- callModule(extractHDF5, "extract_hdf5_1", inputDirectory)
   tracking_config <- callModule(tracking, "tracking1")
-  observe(print(tracking_config()))
+  #observe(print(tracking_config()))
+  observe(print(extractHDF5_config()))
 })
+
 
 
 # Run the application
