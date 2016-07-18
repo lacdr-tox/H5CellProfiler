@@ -1,5 +1,6 @@
 # Extract HDF5 Shiny Module
 source('utils.R')
+source('../utils/cphdf5.R')
 
 ### GLOBAL STUFF ###
 
@@ -9,7 +10,7 @@ default_location_id_option <- c("Select location ID" = "")
 default_plate_id_option <- c("Select plate ID" = "")
 default_image_id_option <- c("Select image ID" = "")
 default_time_id_option <- c("Select time ID" = "")
-default_replicate_id_option <- c("Select replicate ID" = "", "None" = "")
+default_replicate_id_option <- c("Select replicate ID" = "")
 
 ### HDF5 UI ####
 
@@ -21,6 +22,7 @@ extractHDF5UI <- function(id) {
     bsAlert(ns("input_dir_set_alert")),
     uiOutput(ns("hdf5s")),
     bsAlert(ns("no_hdf5s_in_dir")),
+    bsAlert(ns("h5_reading_alert")),
     shiny::tags$label("Layout file:"),
     bsAlert(ns("layout_file_info")),
     bsAlert(ns("no_tsv_in_dir")),
@@ -30,8 +32,11 @@ extractHDF5UI <- function(id) {
     h4("Metadata"),
     helpText(HTML("Here you can set the metadata. The metadata options are extracted from the
                   <strong>first</strong> HDF5 file and the layout file.")),
-    selectInput(ns("location_id", label = "Location ID", choices = default_location_id_option)),
-    selectInput(ns("plate_id", label = "Plate ID", choices = default_plate_id_option)),
+    selectInput(ns("location_id"), label = "Location ID", choices = default_location_id_option),
+    selectInput(ns("plate_id"), label = "Plate ID", choices = default_plate_id_option),
+    selectInput(ns("image_id"), label = "Image ID", choices = default_image_id_option),
+    selectInput(ns("time_id"), label = "Time ID", choices = default_time_id_option),
+    selectInput(ns("replicate_id"), label = "Replicate ID", choices = default_replicate_id_option),
     h4("Results"),
     helpText("It is possible to show the information extracted from the HDF5 files in the browser.
              In this way you can get an overview of your data, and do some preliminary analysis.
@@ -126,8 +131,41 @@ extractHDF5 <- function(input, output, session, inputDirectory) {
     return(NULL)
   })
 
+  first_h5_name <- reactive({
+    if(!is.null(input$h5files)) input$h5files[1] else NULL
+  })
+
+  first_h5_file <- reactive({
+    if(!is.null(inputDirectory()) && !is.null(first_h5_name())) {
+      return(file.path(inputDirectory(), first_h5_name()))
+    }
+    return(NULL)
+  })
+
+  h5_measurements <- reactive({
+    if (is.null(first_h5_file())) {
+      closeAlert(session, "h5_reading_alert")
+      return(NULL)
+    }
+    h5_measurements <- tryCatch({
+      measurements <- getMeasurementsFromCPH5(first_h5_file())
+      # If we're here, we could read the successfully, so we can close the alert
+      closeAlert(session, "h5_reading_alert")
+      return(measurements)
+    }, error = function(e) {
+      # Error reading layout file, create warning
+      createAlert(session, ns("h5_reading_alert"), "h5_reading_alert",
+                  content = HTML(paste("<strong>Error</strong> Could not read <code>", first_h5_name(),
+                                       "</code>, is it a CellProfiler HDF5 file?", sep = "")),
+                  style = "danger", dismiss = FALSE)
+    })
+  })
+
+  observe({print(h5_measurements())})
+
   layout <- reactive({
     if (is.null(layout_file())) {
+      closeAlert(session, "layout_reading_alert")
       return(NULL)
     }
     layout <- tryCatch({
