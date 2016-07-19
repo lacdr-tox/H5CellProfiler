@@ -11,6 +11,10 @@ default_plate_id_option <- c("Select plate ID" = "")
 default_image_id_option <- c("Select image ID" = "")
 default_time_id_option <- c("Select time ID" = "")
 default_replicate_id_option <- c("Select replicate ID" = "")
+default_prim_obj_option <- c("Select primary object" = "")
+default_sec_obj_option <- c("Select secondary objects" = "")
+default_tert_obj_option <- c("Select tertiary object" = "")
+default_features_option <- c("Select features" = "")
 
 ### HDF5 UI ####
 
@@ -37,6 +41,14 @@ extractHDF5UI <- function(id) {
     selectInput(ns("image_id"), label = "Image ID", choices = default_image_id_option),
     selectInput(ns("time_id"), label = "Time ID", choices = default_time_id_option),
     selectInput(ns("replicate_id"), label = "Replicate ID", choices = default_replicate_id_option),
+    timeInput(ns("exposure_delay"), label = "Exposure delay"),
+    timeInput(ns("time_between_frame"), label = "Time between frames"),
+    h4("Objects"),
+    selectInput(ns("primary_object"), label = "Primary (parent) object", choices = default_prim_obj_option),
+    selectInput(ns("secondary_object"), label = "Secondary (child) objects", choices = default_sec_obj_option, multiple = TRUE),
+    selectInput(ns("tertiary_object"), label = "Tertiary object", choices = default_tert_obj_option),
+    h4("Features"),
+    selectInput(ns("features"), label = "Features", choices = default_features_option, multiple = TRUE),
     h4("Results"),
     helpText("It is possible to show the information extracted from the HDF5 files in the browser.
              In this way you can get an overview of your data, and do some preliminary analysis.
