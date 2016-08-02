@@ -41,7 +41,7 @@ extractHDF5UI <- function(id) {
     selectInput(ns("image_id"), label = "Image ID", choices = default_image_id_option),
     selectInput(ns("time_id"), label = "Time ID", choices = default_time_id_option),
     selectInput(ns("replicate_id"), label = "Replicate ID", choices = default_replicate_id_option),
-    timeInput(ns("exposure_delay"), label = "Exposure delay"),
+    timeInput(ns("exposure_delay"), label = "Exposure delay", seconds = FALSE),
     timeInput(ns("time_between_frame"), label = "Time between frames"),
     h4("Objects"),
     selectInput(ns("primary_object"), label = "Primary (parent) object", choices = default_prim_obj_option),
