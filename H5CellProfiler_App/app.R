@@ -15,12 +15,11 @@ source("trackingModule.R")
 source("extractHDF5Module.R")
 
 
+app_version <- "0.1.0"
 modules <- c("extract-hdf5", "tracking")
 module_labels <- c("extract-hdf5" = "Extract HDF5", "tracking" = "Tracking")
 default_modules <- c("extract-hdf5")
 max_cores <- detectCores()
-
-
 
 getHelpTextForModule <- function(module) {
   return(paste("Here you can set the settings for the", module_labels[[module]], "module"))
@@ -35,10 +34,10 @@ ui <- shinyUI(fluidPage(
    sidebarLayout(
      sidebarPanel(
        h3("General settings"),
-       shinyDirButton("input-directory", "Set input directory...", "Select input directory"),
-       verbatimTextOutput('input-directory'),
-       shinyDirButton("output-directory", "Set output directory...", "Select output directory"),
-       verbatimTextOutput('output-directory'),
+       shinyDirButton("input_directory", "Set input directory...", "Select input directory"),
+       verbatimTextOutput('input_directory'),
+       shinyDirButton("output_directory", "Set output directory...", "Select output directory"),
+       verbatimTextOutput('output_directory'),
 
        sliderInput("cores", "CPU cores to use:",
                    min=1, max=max_cores, value=max_cores, step=1, post = " cores"),
@@ -71,33 +70,71 @@ ui <- shinyUI(fluidPage(
 server <- shinyServer(function(input, output, session) {
   roots <- getVolumes()
 
-  shinyDirChoose(input, 'input-directory', session=session, roots = roots)
-  shinyDirChoose(input, 'output-directory', session=session, roots = roots)
+  shinyDirChoose(input, 'input_directory', session=session, roots = roots)
+  shinyDirChoose(input, 'output_directory', session=session, roots = roots)
+
+  inputDirShinyFiles  <- reactive({
+    if(is.null(input$input_directory)) {
+      return(NULL)
+    }
+    return(parseDirPath(roots, input$input_directory))
+  })
+  outputDirShinyFiles <- reactive({
+    if(is.null(input$output_directory)) {
+      return(NULL)
+    }
+    return(parseDirPath(roots, input$output_directory))
+  })
 
   inputDirectory <- reactive({
-    if(is.null(input$`input-directory`)) {
+    if(is.null(inputDirShinyFiles())) {
       #return(NULL)
       return('~/test/test_yaml')
     }
-    parseDirPath(roots, input$`input-directory`)
-    })
-  outputDirectory <- reactive(parseDirPath(roots, input$`output-directory`))
-
-  output$`input-directory` <- renderText({inputDirectory()})
-  output$`output-directory` <- renderText({
-    if(!is.null(input$`output-directory`)) {
-      return(outputDirectory())
+    return(inputDirShinyFiles())
+  })
+  outputDirectory <- reactive({
+    if(!is.null(outputDirShinyFiles())) {
+      return(outputDirShinyFiles())
     }
-    # If output directory is not set, make it the same as the input directory
-    if(!is.null(input$`input-directory`)) {
+    if(!is.null(inputDirectory())) {
       return(file.path(inputDirectory(), "output"))
     }
+    return(NULL)
   })
+
+  output$input_directory <- renderText(inputDirectory())
+  output$output_directory <- renderText(outputDirectory())
 
   extractHDF5_config  <- callModule(extractHDF5, "extract_hdf5_1", inputDirectory)
   tracking_config <- callModule(tracking, "tracking1")
-  #observe(print(tracking_config()))
-  observe(print(extractHDF5_config()))
+
+  modules_config <- reactive({
+    list(
+      "extract-hdf5" = extractHDF5_config(),
+      "tracking" = tracking_config()
+    )
+  })
+
+  io_config <- reactive({
+    list(
+      "input-directory" = inputDirectory(),
+      "output-directory" = outputDirectory()
+    )
+  })
+
+  config <- reactive({
+    list(
+      "config-version" = app_version,
+      "io" = io_config(),
+      "run" = input$modules,
+      "cores" = input$cores,
+      "modules" = modules_config()
+    )
+  })
+
+  #observe(cat(yaml::as.yaml(config())))
+
 })
 
 
