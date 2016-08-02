@@ -16,6 +16,8 @@ default_sec_obj_option <- c("Select secondary objects" = "")
 default_tert_obj_option <- c("Select tertiary object" = "")
 default_features_option <- c("Select features" = "")
 
+full_width <- validateCssUnit("100%")
+
 ### HDF5 UI ####
 
 extractHDF5UI <- function(id) {
@@ -44,11 +46,15 @@ extractHDF5UI <- function(id) {
     timeInput(ns("exposure_delay"), label = "Exposure delay", seconds = FALSE),
     timeInput(ns("time_between_frame"), label = "Time between frames"),
     h4("Objects"),
-    selectInput(ns("primary_object"), label = "Primary (parent) object", choices = default_prim_obj_option),
-    selectInput(ns("secondary_object"), label = "Secondary (child) objects", choices = default_sec_obj_option, multiple = TRUE),
-    selectInput(ns("tertiary_object"), label = "Tertiary object", choices = default_tert_obj_option),
+    selectInput(ns("primary_object"), label = "Primary (parent) object",
+                choices = default_prim_obj_option),
+    selectInput(ns("secondary_object"), label = "Secondary (child) objects",
+                choices = default_sec_obj_option, multiple = TRUE),
+    selectInput(ns("tertiary_object"), label = "Tertiary object",
+                choices = default_tert_obj_option),
     h4("Features"),
-    selectInput(ns("features"), label = "Features", choices = default_features_option, multiple = TRUE),
+    selectInput(ns("features"), label = "Features", choices = default_features_option,
+                multiple = TRUE, width = full_width),
     h4("Results"),
     helpText("It is possible to show the information extracted from the HDF5 files in the browser.
              In this way you can get an overview of your data, and do some preliminary analysis.
@@ -129,6 +135,78 @@ extractHDF5 <- function(input, output, session, inputDirectory) {
     )
   })
 
+  observeEvent(h5_metadata(), {
+    isolate(
+      updateSelectInput(session, "location_id",
+                        choices = c(default_location_id_option, h5_metadata()),
+                        selected = input$location_id)
+    )
+  })
+
+  observeEvent(h5_metadata(), {
+    isolate(
+      updateSelectInput(session, "plate_id",
+                        choices = c(default_plate_id_option, h5_metadata()),
+                        selected = input$plate_id)
+    )
+  })
+
+  observeEvent(h5_metadata(), {
+    isolate(
+      updateSelectInput(session, "image_id",
+                        choices = c(default_image_id_option, h5_metadata()),
+                        selected = input$image_id)
+    )
+  })
+
+  observeEvent(h5_metadata(), {
+    isolate(
+      updateSelectInput(session, "time_id",
+                        choices = c(default_time_id_option, h5_metadata()),
+                        selected = input$time_id)
+    )
+  })
+
+  observeEvent(h5_metadata(), {
+    isolate(
+      updateSelectInput(session, "replicate_id",
+                        choices = c(default_replicate_id_option, h5_metadata()),
+                        selected = input$replicate_id)
+    )
+  })
+
+  observeEvent(h5_objects(), {
+    isolate(
+      updateSelectInput(session, "primary_object",
+                        choices = c(default_prim_obj_option, h5_objects()),
+                        selected = input$primary_object)
+    )
+  })
+
+  observeEvent(h5_objects(), {
+    isolate(
+      updateSelectInput(session, "secondary_object",
+                        choices = c(default_sec_obj_option, h5_objects()),
+                        selected = input$secondary_object)
+    )
+  })
+
+  observeEvent(h5_objects(), {
+    isolate(
+      updateSelectInput(session, "tertiary_object",
+                        choices = c(default_tert_obj_option, h5_objects()),
+                        selected = input$tertiary_object)
+    )
+  })
+
+  observeEvent(h5_features(), {
+    isolate(
+      updateSelectInput(session, "features",
+                        choices = c(default_features_option, h5_features()),
+                        selected = input$features)
+    )
+  })
+
   extractHDF5_input_config <- reactive({
     list(
       "hdf5" = input$h5files,
@@ -173,7 +251,29 @@ extractHDF5 <- function(input, output, session, inputDirectory) {
     })
   })
 
-  observe({print(h5_measurements())})
+  h5_metadata <- reactive({
+    if (is.null(h5_measurements())) {
+      return(character())
+    }
+    metadata <- getMetadataFromMeasurements(h5_measurements())
+    return(metadata)
+  })
+
+  h5_objects <- reactive({
+    if (is.null(h5_measurements())) {
+      return(character())
+    }
+    objects <- getObjectsFromMeasurements(h5_measurements())
+    return(objects)
+  })
+
+  h5_features <- reactive({
+    if (is.null(h5_measurements())) {
+      return(character())
+    }
+    features <- getFeaturesFromMeasurements(h5_measurements(), selected_objects_vector())
+    return(features)
+  })
 
   layout <- reactive({
     if (is.null(layout_file())) {
@@ -201,10 +301,36 @@ extractHDF5 <- function(input, output, session, inputDirectory) {
 
   output$layout_dt <- renderDataTable(getOrElse(layout(),data.frame()), options = list(pageLength = 5,
                                                                lengthMenu = c(5, 10, 15, 20)))
+  selected_objects <- reactive({
+    list(
+    "parent-object" = input$primary_object,
+    "child-objects" = input$secondary_object,
+    "tertiary-object" = input$tertiary_object
+    )
+  })
+
+  selected_objects_vector <- reactive({
+    return(unlist(selected_objects(), use.names = FALSE))
+  })
+
+  extractHDF5_metadata_config <- reactive({
+    list(
+      "location-id" = c(input$location_id),
+      "plate-id" = c(input$plate_id),
+      "image-id" = c(input$image_id),
+      "time-id" = c(input$time_id),
+      "replicate-id" = c(input$replicate_id),
+      "exposure-delay" = strftime(input$exposure_delay, "%R"),
+      "time-between-frame" = strftime(input$time_between_frame, "%T"),
+      "objects" = selected_objects(),
+      "features"  = input$features
+    )
+  })
 
   extractHDF5Config <- reactive({
     list(
       "input" = extractHDF5_input_config(),
+      "metadata" = extractHDF5_metadata_config(),
       "show-results" = input$show_results
     )
   })
