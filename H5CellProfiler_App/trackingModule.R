@@ -125,6 +125,7 @@ tracking <- function(input, output, session){
     # If the slider disappears there is no disappearence event so we set the value to 0 manually
     distances <- lapply(seq_along(distances), function(index, distances){
       ifelse(index <= input$reconnect_over_frames, distances[[index]], 0)}, distances = distances)
+    distances <- as.integer(distances)
   })
 
   observe({
@@ -163,7 +164,7 @@ tracking <- function(input, output, session){
     list(
     "parent-resolve-strategy" = input$parent_resolve_strategy,
     "reconnect-tracks" = (input$reconnect_over_frames > 0),
-    "reconnect-over-frames" = input$reconnect_over_frames,
+    "reconnect-over-frames" = as.integer(input$reconnect_over_frames),
     "max-pixel-reconnect" = unlist(reconnect_distances()),
     "min-tracked-frames" = input$min_tracked_frames,
     "write" = tracking_write_config())
