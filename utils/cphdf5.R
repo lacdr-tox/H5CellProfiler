@@ -35,6 +35,7 @@ getMetadataFromMeasurements <- function(measurements, prefix = TRUE) {
 }
 
 getFeaturesFromMeasurements <- function(measurements, objects) {
+  objects <- unique(objects[objects != ""])
   return(unlist(lapply(objects, function (object) {
     features <- names(measurements[[object]])
     paste(object, "/", features, sep = "")
