@@ -370,8 +370,9 @@ metaCSVData <- metaCSVData[ !"0" ]
 metaCSVData <- metaCSVData[ !0 ]
 metaCSVData <- metaCSVData[ !is.na(locationID),]
 
-# make sure that locationId is a character to avoid failing match later on
+# make sure that locationId and plateID are character to avoid failing match later on
 metaCSVData <- metaCSVData[, locationID:=as.character(locationID)]
+metaCSVData <- metaCSVData[, plateID:=as.character(plateID)]
 
 if ( length(metaCSVData$treatment) != length(metaCSVData$dose_uM[metaCSVData$dose_uM!="" & !is.na(metaCSVData$dose_uM)]) ){
   stop("Some treatments did not have valid concentration in metadata file")
