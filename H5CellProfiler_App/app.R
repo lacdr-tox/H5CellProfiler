@@ -130,7 +130,13 @@ server <- shinyServer(function(input, output, session) {
     )
   })
 
-  #observe(cat(yaml::as.yaml(config())))
+  output$download_yaml <- downloadHandler(
+    filename = "config.yaml",
+    content = function(file) {
+      cat(yaml::as.yaml(config()), file = file)
+    },
+    contentType = "application/x-yaml"
+  )
 
 })
 
