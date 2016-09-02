@@ -38,10 +38,17 @@ extractHDF5UI <- function(id) {
     h4("Metadata"),
     helpText(HTML("Here you can set the metadata. The metadata options are extracted from the
                   <strong>first</strong> HDF5 file and the layout file.")),
+    helpText("HDF5 metadata that corresponds to locationID in layout file (usually wells)."),
     selectInput(ns("location_id"), label = "Location ID", choices = default_location_id_option),
+    helpText("Plate ID is used to couple metadata from the layout file. Can be
+             HDF5 metadata or plateID from the layout file."),
     selectInput(ns("plate_id"), label = "Plate ID", choices = default_plate_id_option),
+    helpText("I don't know what this is for, usually you can pick the same as for Location ID."),
     selectInput(ns("image_id"), label = "Image ID", choices = default_image_id_option),
+    helpText("Time ID is to get the frame numbers from the images. Currently
+             only HDF5 metadata is supported."),
     selectInput(ns("time_id"), label = "Time ID", choices = default_time_id_option),
+    helpText("(Optional) Replicate ID is used for plotting options."),
     selectInput(ns("replicate_id"), label = "Replicate ID", choices = default_replicate_id_option),
     timeInput(ns("exposure_delay"), label = "Exposure delay", seconds = FALSE),
     timeInput(ns("time_between_frame"), label = "Time between frames"),
@@ -53,6 +60,8 @@ extractHDF5UI <- function(id) {
     selectInput(ns("tertiary_object"), label = "Tertiary object",
                 choices = default_tert_obj_option),
     h4("Features"),
+    helpText("Object features to report. If you can't see any features, please
+             make sure you have selected some objects."),
     selectInput(ns("features"), label = "Features", choices = default_features_option,
                 multiple = TRUE, width = full_width),
     h4("Results"),
