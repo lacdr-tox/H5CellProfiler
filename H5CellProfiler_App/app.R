@@ -64,84 +64,88 @@ ui <- shinyUI(fluidPage(
    )
 ))
 
-server <- shinyServer(function(input, output, session) {
-  roots <- getVolumes()
+getServer <- function(input.dir) {
+  shinyServer(function(input, output, session) {
+    roots <- getVolumes()
 
-  shinyDirChoose(input, 'input_directory', session=session, roots = roots)
-  shinyDirChoose(input, 'output_directory', session=session, roots = roots)
+    shinyDirChoose(input, 'input_directory', session=session, roots = roots)
+    shinyDirChoose(input, 'output_directory', session=session, roots = roots)
 
-  inputDirShinyFiles  <- reactive({
-    if(is.null(input$input_directory)) {
+    inputDirShinyFiles  <- reactive({
+      if(is.null(input$input_directory)) {
+        return(NULL)
+      }
+      return(parseDirPath(roots, input$input_directory))
+    })
+    outputDirShinyFiles <- reactive({
+      if(is.null(input$output_directory)) {
+        return(NULL)
+      }
+      return(parseDirPath(roots, input$output_directory))
+    })
+
+    inputDirectory <- reactive({
+      if(is.null(inputDirShinyFiles())) {
+        return(input.dir)
+      }
+      return(inputDirShinyFiles())
+    })
+    outputDirectory <- reactive({
+      if(!is.null(outputDirShinyFiles())) {
+        return(outputDirShinyFiles())
+      }
+      if(!is.null(inputDirectory())) {
+        return(file.path(inputDirectory(), "H5CP_output"))
+      }
       return(NULL)
-    }
-    return(parseDirPath(roots, input$input_directory))
-  })
-  outputDirShinyFiles <- reactive({
-    if(is.null(input$output_directory)) {
-      return(NULL)
-    }
-    return(parseDirPath(roots, input$output_directory))
-  })
+    })
 
-  inputDirectory <- reactive({
-    if(is.null(inputDirShinyFiles())) {
-      #return(NULL)
-      return('~/test/test_yaml')
-    }
-    return(inputDirShinyFiles())
-  })
-  outputDirectory <- reactive({
-    if(!is.null(outputDirShinyFiles())) {
-      return(outputDirShinyFiles())
-    }
-    if(!is.null(inputDirectory())) {
-      return(file.path(inputDirectory(), "output"))
-    }
-    return(NULL)
-  })
+    output$input_directory <- renderText(inputDirectory())
+    output$output_directory <- renderText(outputDirectory())
 
-  output$input_directory <- renderText(inputDirectory())
-  output$output_directory <- renderText(outputDirectory())
+    extractHDF5_config  <- callModule(extractHDF5, "extract_hdf5_1", inputDirectory)
+    tracking_config <- callModule(tracking, "tracking1")
 
-  extractHDF5_config  <- callModule(extractHDF5, "extract_hdf5_1", inputDirectory)
-  tracking_config <- callModule(tracking, "tracking1")
+    modules_config <- reactive({
+      list(
+        "extract-hdf5" = extractHDF5_config(),
+        "tracking" = tracking_config()
+      )
+    })
 
-  modules_config <- reactive({
-    list(
-      "extract-hdf5" = extractHDF5_config(),
-      "tracking" = tracking_config()
+    io_config <- reactive({
+      list(
+        "input-directory" = inputDirectory(),
+        "output-directory" = outputDirectory()
+      )
+    })
+
+    config <- reactive({
+      list(
+        "config-version" = app_version,
+        "io" = io_config(),
+        "run" = input$modules,
+        "cores" = input$cores,
+        "modules" = modules_config()
+      )
+    })
+
+    output$download_yaml <- downloadHandler(
+      filename = "config.yaml",
+      content = function(file) {
+        cat(yaml::as.yaml(config()), file = file)
+      },
+      contentType = "application/x-yaml"
     )
   })
+}
 
-  io_config <- reactive({
-    list(
-      "input-directory" = inputDirectory(),
-      "output-directory" = outputDirectory()
-    )
-  })
-
-  config <- reactive({
-    list(
-      "config-version" = app_version,
-      "io" = io_config(),
-      "run" = input$modules,
-      "cores" = input$cores,
-      "modules" = modules_config()
-    )
-  })
-
-  output$download_yaml <- downloadHandler(
-    filename = "config.yaml",
-    content = function(file) {
-      cat(yaml::as.yaml(config()), file = file)
-    },
-    contentType = "application/x-yaml"
-  )
-
-})
-
-
+getApp <- function(input.dir = getwd()) {
+  server <- getServer(input.dir)
+  # launch.browser should be true, otherwise downloadHandler is not working
+  shinyApp(ui = ui, server = server, options = list(launch.browser=T))
+}
 
 # Run the application
-# launch.browser should be true, otherwise downloadHandler is not working
-shinyApp(ui = ui, server = server, options = list(launch.browser=T))
+app <- getApp()
+app
