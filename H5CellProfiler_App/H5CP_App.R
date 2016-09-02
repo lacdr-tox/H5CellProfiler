@@ -145,7 +145,3 @@ getApp <- function(input.dir = getwd()) {
   # launch.browser should be true, otherwise downloadHandler is not working
   shinyApp(ui = ui, server = server, options = list(launch.browser=T))
 }
-
-# Run the application
-app <- getApp()
-app
