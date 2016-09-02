@@ -143,5 +143,5 @@ server <- shinyServer(function(input, output, session) {
 
 
 # Run the application
-shinyApp(ui = ui, server = server)
-
+# launch.browser should be true, otherwise downloadHandler is not working
+shinyApp(ui = ui, server = server, options = list(launch.browser=T))
