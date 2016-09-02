@@ -143,10 +143,10 @@ extractHDF5 <- function(input, output, session, inputDirectory) {
     )
   })
 
-  observeEvent(h5_metadata(), {
+  observeEvent(c(h5_metadata(), plate_ids_from_layout()), {
     isolate(
       updateSelectInput(session, "plate_id",
-                        choices = c(default_plate_id_option, h5_metadata()),
+                        choices = c(default_plate_id_option, plate_ids_from_layout(), h5_metadata()),
                         selected = input$plate_id)
     )
   })
@@ -292,6 +292,13 @@ extractHDF5 <- function(input, output, session, inputDirectory) {
                                  correct format?"), style = "danger", dismiss = FALSE)
       return(NULL)
     })
+  })
+
+  plate_ids_from_layout <- reactive({
+    if(is.null(layout())) {
+      return(c())
+    }
+    as.vector(unique(layout()$plateID))
   })
 
   output$preview_layout <- renderUI({
