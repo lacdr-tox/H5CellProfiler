@@ -44,7 +44,8 @@ ui <- shinyUI(fluidPage(
 
        checkboxGroupInput("modules", label = "Modules to run:",
                           choices = as.list(invertVector(module_labels)),
-                          selected = default_modules)
+                          selected = default_modules),
+       downloadButton("download_yaml", "Download config file...")
      ),
 
      mainPanel(
@@ -60,11 +61,7 @@ ui <- shinyUI(fluidPage(
          )
        )
      )
-
-   ),
-   hr(),
-   downloadButton("downloadYaml", "Download config file...")
-   #actionButton("runConfig", "Run pipeline with config")
+   )
 ))
 
 server <- shinyServer(function(input, output, session) {
