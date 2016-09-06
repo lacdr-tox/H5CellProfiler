@@ -337,7 +337,11 @@ trackingFun <- function(config, cores) {
                                        writeAfterFirstConnect, writeAfterSecondReconnect, writeAfterThirdReconnect,
                                        reconnect_frames, minTrackedFrames, writeSingleCellDataPerWell, parent_resolve_strategy)
                       }
-
+mclapply_error_state <- sapply(allTrackDF, function(x) {is(x, "try-error")})
+  if(any(mclapply_error_state)) {
+  print(allTrackDF[mclapply_error_state])
+  stop("error in parallel code, if the error is 'fatal error in wrapper code', try reducing number of cores")
+}
 
 
   # pull out distinct data sets
