@@ -95,20 +95,25 @@ mainFunction <- function(  hdf5FileNameL=hdf5FileNameL,locationID=locationID, ti
   
 myFeaturePathsA <- paste( "Measurements", setDateID ,myFeaturePathsA, sep = "/")
   if( !is.character0(trackedObject) ){
+    # if LAP tracking is used, track_dist will be NA
     track_dist<-unique(str_extract(all.paths.tr, '[0-9]{1,3}$')  )
     if(length(track_dist) != 1){
       stop("reg expr for track_dist failed")
-  }
+    }
+    if(is.na(track_dist)) {
+      track_dist <- NULL
+    } else {
+      track_dist <- paste0( "_" ,track_dist)
+    }
 
-  
-  
-  
-  
-  trackedObjectDisplacement<- paste("TrackObjects_DistanceTraveled", track_dist, sep ="_") 
-  trackingLabel <- paste(trackedObject, "/", "TrackObjects_Label_", track_dist , sep  ="") 
-  # dont confuse this with Parent object:
-  trackingParent <- paste(trackedObject, "/", "TrackObjects_ParentObjectNumber_", track_dist, sep ="") 
+
+  trackedObjectDisplacement<- paste("TrackObjects_DistanceTraveled", track_dist, sep ="") 
+  trackingLabel <- paste(trackedObject, "/", "TrackObjects_Label", track_dist , sep  ="") 
+
+     # dont confuse this with Parent object:
+  trackingParent <- paste(trackedObject, "/", "TrackObjects_ParentObjectNumber", track_dist, sep ="") 
   trackingLabel <- paste( "Measurements", setDateID, trackingLabel, sep = "/" )  
+  
   xCoordPath <- paste("Measurements",  setDateID ,trackedObject,"Location_Center_X", sep = "/" )
   yCoordPath <- paste("Measurements",  setDateID ,trackedObject,"Location_Center_Y", sep = "/" )
   DistanceTraveledPath <- paste( "Measurements", setDateID, trackedObject, 
@@ -246,15 +251,15 @@ if(!exists("track_dist")){
 track_dist <- character(0)
 }
 # variable columns names:
-trackingParentCN = paste(trackedObject, 'TrackObjects_ParentObjectNumber', track_dist, sep = "_") # track-parent (timewise)
+trackingParentCN = paste(trackedObject, '_TrackObjects_ParentObjectNumber', track_dist, sep = "") # track-parent (timewise)
 trackingObjectNumberCN = paste(trackedObject, 'Number_Object_Number', sep = "_")
 trackingxCoordCN = paste(trackedObject, 'Location_Center_X', sep = "_")
 trackingyCoordCN = paste(trackedObject, 'Location_Center_Y',  sep = "_")
 trackingxCoordCN_tMin1 = paste(trackingxCoordCN, 'tMin1', sep = '_')
 trackingyCoordCN_tMin1 = paste(trackingyCoordCN, 'tMin1', sep = '_')
-trackingLabelCN =  paste(trackedObject, 'TrackObjects_Label', track_dist, sep = '_')
+trackingLabelCN =  paste(trackedObject, '_TrackObjects_Label', track_dist, sep = '')
 parentObjectNumberCN = paste(parentObject, 'Number_Object_Number', sep = "_")
-trackingDistanceTraveledCN = paste(trackedObject, 'TrackObjects_DistanceTraveled', track_dist, sep = "_")
+trackingDistanceTraveledCN = paste(trackedObject, '_TrackObjects_DistanceTraveled', track_dist, sep = "")
 
 ImageCountParentsCN <- "imageCountParentObj"
 

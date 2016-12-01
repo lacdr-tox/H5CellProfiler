@@ -1,0 +1,723 @@
+---
+title: "LAP_validation"
+author: "Steven Wink"
+date: "29 november 2016"
+output: html_document
+---
+
+
+
+
+
+```{r }
+rm(list=ls())
+getwd()
+#"D:/DILI screen/2013-12-11"
+#run fixTrackingFun
+#modify myDFo met output
+#fix alle plotjes
+#distribueer
+#analyzeer sylvia data
+
+options(stringsAsFactors = FALSE)
+#setwd("G:/Endpoint assay/2014-10-30_R002/Output XBP1")
+
+dir()
+#load library with methods for reading xls files
+rm(list=ls())
+cp.pipeline.location <- 'D:/src/hardervidertsie/H5CellProfiler'
+source(file.path(cp.pipeline.location, "mainFunction.R"), chdir = TRUE)
+source(file.path(cp.pipeline.location, "fixTrackingFun.R"))
+library(rhdf5)
+library(stringr)
+library(plyr)
+library(data.table)
+library(doParallel)
+library(ggplot2)
+library(reshape2)
+library(grid)
+library(shiny)
+library(ggvis)
+require(EBImage)
+source(file.path(cp.pipeline.location, "theme_sharp.R"))
+source(file.path(cp.pipeline.location, "countCellFun.R"))
+
+#=================user defined variables=================================================================
+#========================================================================================================
+#========================================================================================================
+#========================================================================================================
+#========================================================================================================
+#========================================================================================================
+#====================================,====================================================================
+#global variables:
+dir()
+
+# Each hdf5 file contains 1 or multiple plate-based data (i.e. do not divide data from 1 plate in multiple h5 files unless different time points)
+hdf5FileNameL <- c("DefaultOUT.h5") # mainFunction will loop through this vector, at the end rbinding the individual outputs. 
+image.path <- "D:/analysis/Sylvia nuclear cell migration/Screen Eytan Ruppin/subset"
+grepTrackedChannel <- "c1t"# unique string of images containing tracked objects, to select images from directory
+nTPs <- 20 # how many time points training set in CP?
+plotTrackProjections <- TRUE # plot xy coords on raw images contain tracked object. takes some time (approx 10 secs/ image for 512X512, approx 25 seconds/ image 1012X1024). Perform this once you have decent tracking
+imagePixel.x <- 1216
+imagePixel.y <- 912
+# each hdf5 gets it's own metadata info. Either a path WITH the "Image/" character or a manualy defined string WITHOUT the "/" character
+# If each h5 file has identical metadata 1 entry is sufficient. Else provide entry for each h5 file
+
+# these metadata variables should be defined in metadata layout file if they vary within the h5 file, if not needed in the metadata file (so metadata is provided in these variables) - then put NA's in the metadata file
+locationID <- c("Image/Metadata_locationID")  # well/ location metadata
+plateID <- c( "Image/Metadata_plateID") # PlateID must always be provided (either manual or h5 paths)- here AND in layout file: becuase plateID is used to couple metadata plate layout file.
+imageID <- c("Image/Metadata_imageID") # Image/Metadata_  ... image number (obtained from image file name ) 
+timeID <- c("Image/Metadata_tp") # timeID, either hdf5 path, or vector of numbers according to hdf5 files (each hdf5 is then a time point) So capture time point in h5 file if needed. Or defined in metadata layout file
+replID <- c("") # replicate ID (are the plate replicates of each other? (just easy for plotting options))
+exposureDelay <- c("00:00") # hh:mm 
+timeBetweenFrames <- c("00:06:00") # hh:mm:ss 
+#define the paths of the measurements you are interested in, leave empty if you dont need so many: full full full empty empty empty.....  NOT: full empty full.....
+# this is for measurements: tracking will be handled automatically
+
+# only object related data or image related data( e.g. not implemented yet for Relationship/ Experiment related data )
+# only add the object/feature part for example:  "myObject/Inensity_MeanIntensity_img"
+
+myFeaturePathsA <- list(  #do not define displacement and parent object  - these are automatically included
+firstFeature  = "nc_obj/Intensity_MeanIntensity_nuclei_img",  # enter a objectpath inside .h5 file to measurement ( there will be one  /  meaning--> object/measurement)
+secondFeature = "Image/Count_nc_obj",
+thirdFeature  = "",
+fourthFeature = "",
+fifthFeature  = "",
+sixthFeature  = "",
+seventhFeature= "",
+eighthFeature = "",
+ninethFeature = "",
+thenthFeature = "" ) 
+  # tab delimted text file with metadata headers:    well  treatment  dose_uM	control	cell_line 
+#the control is 1 or `1 where `1 is a control (just used for some extra coloring in plots)
+plateMDFileName <- "layoutsubset.txt"
+dir()
+parentObject <- "nc_obj" # the name in hdf5 file of the parent ( as defined in relate objects module in CellProfiler ) if no parent (only 1 object defined in CP for example: then enter the object here)
+
+childObject1 <- "" # First child of parentObject (if a child object was tracked - define this as your tracked object)
+childObject2 <- ""
+childObject3 <- ""
+childObject4 <- ""
+childObject5 <- ""
+tertiaryObject <- "" #  child of parentObject and childObject1 object. Defined (in CP) by substraction of larger object minus smaller object
+
+# what summary statistic do you prefer to display the multiple objects per parent object with? This is NOT performed for nuclei, but for children objects like foci this can be usefull
+multiplePerParentFunction <- function(x) { mean(x, na.rm = TRUE) }  # or  function(x) { quantile(x, 0.8, na.rm = TRUE) }
+
+oscillation <- FALSE  # TRUE / FALSE  - will extract oscillation related parameters of divisionOne (TRUE is not implemented yet)
+
+writeSingleCellDataPerWell <- FALSE # write all single cell data in seperate file per well, takes time
+writeAllSingleCellData<- FALSE  # Only needed of you need the txt file yourselfl writes all single cell data in single txt file.
+numberCores <- 1 # should be specified after sourcing mainFunction -> weird dependency, should fix
+dir()
+
+
+#do the same for set2 if exists, then rbind the results with myDF
+outputList= list()
+# run main function: this could be made parralel but so far speed has not been an issue for this function
+if(length(hdf5FileNameL) > 1) {
+registerDoParallel(min(numberCores, length(hdf5FileNameL)))
+
+outputList<- foreach( h5loop = seq_along(hdf5FileNameL ),
+                      .packages = c("rhdf5", "stringr", "data.table", "plyr")) %dopar%
+  {
+
+     mainFunction( h5loop=h5loop,
+     hdf5FileNameL=hdf5FileNameL,locationID=locationID, timeID=timeID, plateID=plateID,
+     imageID=imageID, replID = replID, 
+     myFeaturePathsA=myFeaturePathsA, plateMDFileName=plateMDFileName,
+     parentObject=parentObject, childObject1=childObject1, childObject2=childObject2, 
+     childObject3=childObject3, childObject4=childObject4, childObject5=childObject5, 
+     tertiaryObject=tertiaryObject, multiplePerParentFunction=multiplePerParentFunction,
+     oscillation=oscillation, 
+     writeSingleCellDataPerWell=writeSingleCellDataPerWell, 
+     writeAllSingleCellData=writeAllSingleCellData,
+     timeBetweenFrames=timeBetweenFrames, exposureDelay=exposureDelay 
+     )
+   }
+} else {
+  h5loop <- 1
+    outputList <- mainFunction( h5loop=h5loop,
+     hdf5FileNameL=hdf5FileNameL,locationID=locationID, timeID=timeID, plateID=plateID,
+     imageID=imageID, replID = replID, 
+     myFeaturePathsA=myFeaturePathsA, plateMDFileName=plateMDFileName,
+     parentObject=parentObject, childObject1=childObject1, childObject2=childObject2, 
+     childObject3=childObject3, childObject4=childObject4, childObject5=childObject5, 
+     tertiaryObject=tertiaryObject, multiplePerParentFunction=multiplePerParentFunction,
+     oscillation=oscillation, 
+     writeSingleCellDataPerWell=writeSingleCellDataPerWell, 
+     writeAllSingleCellData=writeAllSingleCellData,
+     timeBetweenFrames=timeBetweenFrames, exposureDelay =exposureDelay
+     )
+}
+  
+  
+save(outputList, file = 'outputList.Rdata')
+
+#load("outputList.Rdata")
+
+if(length(unlist(lapply( lapply(outputList, names),str_match_all, "myDT") )) > 1) {
+  outputListmyDT<- lapply(outputList, "[[", "myDT")
+      testColN<- lapply(outputListmyDT, function(x) {(  (names(x)))} )
+      all.identical <- function(x) all(mapply(identical, x[1], x[-1]))
+      if(!all.identical(testColN))
+        {
+        myDFo <- do.call('rbind', outputListmyDT)
+        
+        } else{
+        myDFo <- rbindlist(outputListmyDT)  
+                  
+        }
+outputListsumData <- lapply(outputList, "[[", "sumData")
+
+sumData <- rbindlist(outputListsumData)
+
+ kMyVars <- outputList[length(outputList)][[1]]
+  kMyVars$myDT <- NULL
+} else {
+  outputListmyDT <- outputList$myDT
+  myDFo <- outputListmyDT
+  kMyVars <- outputList[-1]
+  sumData<- outputList$sumData
+
+}
+
+
+
+ 
+  kColNames <- kMyVars$kColNames
+  dataFileName <- gsub(".txt", "",kMyVars$plateMDFileName)
+
+
+
+myFeatures <- gsub("/", "_", 
+                     gsub("^(Measurements/[0-9]{4}(-[0-9]{2}){5}/)", "", kMyVars$myFeaturePathsA)
+                     )
+numberCores <- kMyVars$numberCores
+
+numberCores <- 1
+
+
+
+dir()
+load('outputList.Rdata')
+
+
+if(length(unlist(lapply( lapply(outputList, names),str_match_all, "myDT") )) > 1) {
+  outputListmyDT<- lapply(outputList, "[[", "myDT")
+      testColN<- lapply(outputListmyDT, function(x) {(  (names(x)))} )
+      all.identical <- function(x) all(mapply(identical, x[1], x[-1]))
+      if(!all.identical(testColN))
+        {
+        stop("outputlist does have tables with identical column names/ 
+             object names, manually rbind the outputlist")
+        }
+
+myDFo <- rbindlist(outputListmyDT)
+
+
+ kMyVars <- outputList[length(outputList)][[1]]
+  kMyVars$myDT <- NULL
+} else {
+  outputListmyDT <- outputList$myDT
+  myDFo <- outputListmyDT
+  kMyVars <- outputList[-1]
+}
+
+ 
+  kColNames <- kMyVars$kColNames
+  dataFileName <- gsub(".txt", "",kMyVars$plateMDFileName)
+
+myFeatures <- gsub("/", "_", 
+                     gsub("^(Measurements/[0-9]{4}(-[0-9]{2}){5}/)", "", kMyVars$myFeaturePathsA)
+                     )
+myFeatures <- c(myFeatures, "imageCountTracked")
+numberCores <- kMyVars$numberCores
+writeSingleCellDataPerWell <- TRUE # write all single cell data in seperate file per well, takes time
+writeAllSingleCellData<- TRUE  # write all single cell data in single file, takes time, usefull because plotting/ summary chunk can then load this for later (re) runs
+
+
+
+# ===================== User defined variables =====================
+# ===================== User defined variables =====================
+# ===================== User defined variables =====================
+
+
+reconnect_tracks <- TRUE # moet op true (FALSE not implemented yet)
+max_pixel_reconnect1 <- 1 # if larger than CP settings calculation overhead can become alot higher
+max_pixel_reconnect2 <- 0 # further in time cells might be further away from parent
+max_pixel_reconnect3 <- 0
+reconnect_frames <- 1  # over how many frames to connect? can choose 1,2 or 3. 1 means no frame is skipped, 2 then 1 frame is skipped etc. will first perform direct linking then skip 1 frame then 2 to try and reconnect tracks based on maximal considered distance
+skip.wells <- c( )
+minTrackedFrames <- 1 # remove short tracks from data output
+findMinIdenticalParents <- TRUE #  if an object has multiple (tracking) parents - do you want to select the closest one or a random one? 
+findMinIdenticalParents_distance_Feature <- TRUE # (FALSE is not implemented yet) TRUE for distance based selection, FALSE for Feature (myFeature) based selection of parent 
+
+summaryStatFunction <- function(x) { mean(x, na.rm = TRUE) } # function(x) { mean(x, na.rm = TRUE) }  or function(x) { quantile(x, 0.8, na.rm = TRUE) } (you can choose which quantile - here it is set to 0.8)
+errorType <- "sd"   #"sd"  or  "cl95"   the cl95 is two sided 95% confidence interval. sd is standard error, half above and half under the average
+writeUniqueParentsNoRec <- TRUE
+writeBeforeCombineTracks<- TRUE
+writeAfterFirstConnect<- TRUE
+writeAfterSecondReconnect<- TRUE
+writeAfterThirdReconnect<- TRUE
+## ========================== end user defined variables============
+## ========================== end user defined variables============
+## ========================== end user defined variables============
+## ========================== end user defined variables============
+
+
+
+if(exists('allTrackDF')){
+rm("allTrackDF") # needs to be removed to be able to re-run this block
+}
+
+
+
+# get all the features needed for plotting:
+myFeature <- myFeatures[1]
+
+
+# if this is enabled the myDFo has to be modified so that no NA values exist for the tracked object. Assumed is that if an NA exists, the row  corresponding to a certain object will be NA
+
+Parent_NON <- outputList$kColNames$parentObjectNumberCN
+myDT <- myDFo
+if (sum(is.na(myDT[,Parent_NON, with = FALSE])) > 0 )
+  {
+  stop("NA values in dataset. Consider using a different CP pipeline")
+  }
+# if needed I might have to remove certain the rows with certain column specific NA values (the measurements for example, or maybe the x-y coordinates?)
+
+colnames(myDT)
+uniqueWells <- unique(myDT[,locationID])
+uniqueWells <- uniqueWells[ !uniqueWells %in% skip.wells]
+uniqueWells<- factor(uniqueWells)
+
+# check cell count
+#cl<-makeCluster(1)
+ # registerDoSNOW(cl)
+
+#split data in numberCore parts, if length(uniqueWells) > numberCores
+if( length(uniqueWells) < numberCores) {
+  stop("Reduce the number of cores")
+}
+ 
+jumpInd <-length(uniqueWells) %/% numberCores
+uniqueWellsLevels <- rep(1:numberCores, each = jumpInd)
+#add some extra at the end in case levels is shorter:
+extraEnd <-  length(uniqueWells) - length(uniqueWellsLevels) 
+uniqueWellsLevels<- c(uniqueWellsLevels,  rep(uniqueWellsLevels[length(uniqueWellsLevels)], extraEnd))
+if(length(uniqueWellsLevels) != length(uniqueWells) | !all(sort(uniqueWellsLevels) == uniqueWellsLevels)) {
+  stop("making uniqueWellLevels failed")
+}
+uniqueWellGroups  = list()
+  for(countergroups in seq_along(unique(uniqueWellsLevels))) {
+    uniqueWellGroups[[countergroups]] <- uniqueWells[ uniqueWellsLevels == countergroups]
+  }
+
+  registerDoParallel(cores=numberCores)
+
+cellNlist <- foreach ( cellC = seq_along(1:numberCores ), .packages = 'data.table') %do% {
+
+    ind <-   myDT[ , locationID] %in% uniqueWellGroups[[cellC]]
+    partmyDT <- myDT[ind,]
+    out.min <- partmyDT[, min(imageCountTracked), by = locationID]
+    out.max <- partmyDT[, max(imageCountTracked), by = locationID]
+    setnames(out.min, 'V1', "minimum number of tracked objects") 
+    setnames(out.max, 'V1', "maximum number of tracked objects") 
+    setkey(out.min,locationID)
+    setkey(out.max,locationID)
+    out.both <- out.min[out.max]
+    out.both
+  }
+cellNlist <- rbind.fill(cellNlist)
+write.table(cellNlist, file = 'trackedObject_counts.txt' ,  row.names = FALSE, sep = "\t")
+#rm("out.min", "out.max","out.both", "cellNlist", "partmyDFo")
+#selFeatures <- gsub("\\/", "_",  str_match(  unlist(myFeaturePathsA), "([^/]*[\\/][.]*[^/]*)$")[, 1 ] ) 
+  
+ # selFeatures <- selFeatures[!is.na(selFeatures)]
+  
+setkey(myDT, locationID)
+
+#TODO: comment this away/ remove this once not needed anymore
+# will need to fix some colnames from wrong mainFunction.R output before 9 dec 2014
+indC<-grep(  "_TrackObjects_DistanceTraveled_",colnames(myDT))
+
+track_dist <- str_match(colnames(myDT)[indC],"(DistanceTraveled_[0-9]{1,3})$" )[2]
+track_dist<- gsub("DistanceTraveled_", "", track_dist)
+indEnd_ <- unlist(lapply(kColNames, function(x) {grepl("(_)$", x)  }))
+names(indEnd_) <- NULL
+kColNames[indEnd_] <- paste(kColNames[indEnd_], track_dist, sep="")
+
+  registerDoParallel(cores=numberCores)
+
+
+
+allTrackDF<-foreach(i = seq_along(uniqueWellGroups), 
+                    .packages = c("reshape2", "plyr","stringr", "data.table" )) %do% {
+  myDFstukkie <- myDT[ uniqueWellGroups[ i ]]
+  fixTrackingFun(myDFstukkie, myFeatures, i)
+}
+
+
+
+# pull out distinct data sets
+
+allTrackDFreal <- lapply(allTrackDF, '[[', "allTrackDF")
+directionality.data <- lapply(allTrackDF, '[[', "directionality.data")
+directionality.data <- rbind.fill(directionality.data)
+allTrackDF <- rbind.fill(allTrackDFreal)
+rm(allTrackDFreal)
+
+directionality.data <- as.data.table(directionality.data)
+allTrackDF <- as.data.frame(allTrackDF)
+
+#dit van RData file halen
+
+metaData <- kMyVars$metaCSVData
+indRM <- which(unlist(lapply(metaData, function(x) any(is.na(x)))))
+print(c("removing columns from metadata file:" ,indRM))
+if(!length(indRM) < 1) {
+metaData[, eval(indRM):= NULL]  
+}
+
+
+#allTrackDF$treatment <- NA
+#allTrackDF$dose_uM <- NA
+#allTrackDF$control <- NA
+#allTrackDF$cell_line <- NA
+print("adding metadata:")
+
+head(allTrackDF$location)
+allTrackDF <- as.data.table(allTrackDF)
+allTrackDF[, mergeLocation:= gsub("(_[1-9]{1})$", "", location)]
+
+allTrackDF[ , mergeLocation:= as.factor(mergeLocation)]
+metaData[, locationID:= as.factor(locationID)]
+setkey(allTrackDF, "mergeLocation")
+setkey(metaData, "locationID")
+
+allTrackDF<- metaData[allTrackDF]
+
+
+#allTrackDF <- allTrackDF[ !is.na(allTrackDF$value), ] # dit gaat niet ivm verschil in NA voor bijv eerste tijdpunt displacement
+# misschien adv bepaalde variabele de na indexen maken en dan per feature deze index gebruiken
+# niet ideaal om hier te doen (memory/ performance), maar voorlopig:
+zehFeats <- unique(allTrackDF$.id)
+
+# first feature for index
+
+print("use first feature that is not displacement to create index to remove NA values from all features")
+ind <- !is.na(allTrackDF[ allTrackDF$.id == myFeatures[!myFeatures %in% c("displacement" ) ][1], value ])
+head(allTrackDF)
+
+bufferList = list()
+for( i in seq_along(zehFeats)){
+  
+bufferList[[i]] <- allTrackDF[  allTrackDF$.id == zehFeats[i], ][ind,]
+}
+bufferDF <- rbind.fill(bufferList)
+
+write.table(bufferDF, file = "reorderedTrackData.txt", sep ="\t", row.names = FALSE)
+write.table(directionality.data, file = "directionality.txt", sep ="\t", row.names= FALSE)
+
+
+#
+#TODO myDFo adv dit blok aanpassen voor GUI plotten
+
+myDFo <- bufferDF
+
+
+errorType <- "sd" # cl95 or sd
+numberCores <- 1
+directionalityPlot <- 4 # do you want the directionality plotted?, then choose how many intervals. Else set to FALSE
+plot.by <- "treatment" # for now still only "treatment" is implemented enter "location"  or "treatment"
+
+dir()
+#allTrackDFt <- read.table(file ="D:/analysis/FRET/subset/with2ndrun/reorderedTrackData.txt" , sep ="\t", header =T)
+#allTrackDF<-bufferDF
+head(allTrackDF)
+unique(allTrackDF$.id)
+
+# choose features of interest for plotting (use unique(allTrackDF$.id in line above to check which ones are available))
+singleCellMeas <- c("yfp_obj_TrackObjects_Area",
+                    "Image_Count_yfp_obj",
+                   
+                    "displacement") 
+unique(allTrackDF$location)
+plotTracks<-c("B02_2","B04_1", "D03_2", "D04_1" ,"E03_2","F02_1", "G02_1") # choose wells to plot tracks of, or put to FALSE
+plotTracks <- unique(allTrackDF$location)
+nCellTrack <- 20# don't do too many for clarity. How many cells do you want plotted in track plots To plot all cells choose ridiculous high number
+
+DisplvsFirsFeature_linePlot <- TRUE
+singleCell.plot.number <- 12 # for line plot
+
+MV_pairPlots <- TRUE # takes long to make if many many cells in dataset
+
+beanPlot <- TRUE
+
+densityPlots <- TRUE
+
+writePDFs <- TRUE
+# ========= end of user defined variables
+#====================================================================================#
+#====================================================================================#
+#====================================================================================#
+# can load your reorderedTrackData.txt file here if needed
+
+
+colnames(allTrackDF)[colnames(allTrackDF)==".id"] <- "feature" 
+colnames(allTrackDF)[colnames(allTrackDF)=="variable"] <- "timePoint" 
+
+timeBetweenFrames <- round(as.integer(strftime(strptime(timeBetweenFrames, format = "%H:%M"), "%H")) + 
+                               1/60 * as.integer(strftime(strptime(timeBetweenFrames, 
+                                                                   format = "%H:%M"), "%M")), digit =1 )
+
+    exposureDelay <- round(as.integer(strftime(strptime(exposureDelay, format = "%H:%M"), "%H")) + 
+                               1/60 * as.integer(strftime(strptime(exposureDelay, 
+                                                                   format = "%H:%M"), "%M")), digit =1 )
+
+
+allTrackDF$Metadata_tp <- gsub("TP_", "", allTrackDF$timePoint)
+
+allTrackDF$timeAfterExposure <- as.integer(allTrackDF$Metadata_tp) * timeBetweenFrames + exposureDelay - timeBetweenFrames
+allTrackDF$Metadata_tp<- NULL
+
+
+#size.data <- object.size(allTrackDF)
+# if(  size.data > 1518342696  ) {
+# numberCores <- 4
+#   print( paste("number of cores reduced to 4 because data size is : ", round(size.data/1024), "Mb"))
+# }
+  
+
+
+
+all.locations <- unique(allTrackDF$location)
+all.treatments <- unique(allTrackDF$treatment)
+singleCellMeas<-c(singleCellMeas, "imageCountTracked", "displacement")
+singleCellMeas <- unique(singleCellMeas)
+
+# test1 <- allTrackDF[ allTrackDF$feature == singleCellMeas[1], c("location", "trackLabel") ]
+# test2 <- allTrackDF[ allTrackDF$feature == singleCellMeas[2], c("location", "trackLabel") ]
+# 
+# if(!all(test1== test2))
+#   {
+#   stop("correlation cannot be calculated, script error")
+#   }
+#rm(test1,test2)
+#corrMatrix = list()
+# print("Calculating single cell correlations for features: ")
+# cat(paste(singleCellMeas, collapse = "\n"))
+# Sys.sleep(0.1)
+# 
+# registerDoParallel(cores=numberCores)
+# 
+# jumpInd <-length(all.locations) %/% numberCores
+# all.location.Levels <- rep(1:numberCores, each = jumpInd)
+# #add some extra at the end in case levels is shorter:
+# extraEnd <- length(all.locations) - length(all.location.Levels)
+# all.location.Levels<- c(all.location.Levels, rep(all.location.Levels[length(all.location.Levels)], extraEnd))
+# if(length(all.location.Levels) != length(all.locations) | !all(sort(all.location.Levels) == all.location.Levels)) {
+#   stop("making all.location.Levels failed")
+# }
+# uniqueLocationsGroups  = list()
+#   for(countergroups in seq_along(unique(all.location.Levels))) {
+#     uniqueLocationsGroups[[countergroups]] <- all.locations[ all.location.Levels == countergroups]
+#   }
+# 
+
+if(!file.exists("trackOrderedPlots")){
+  dir.create("trackOrderedPlots")
+}
+if(!file.exists("trackOrderedPlots/trackPlots")){
+  dir.create("trackOrderedPlots/trackPlots")
+}
+if(!file.exists("trackOrderedPlots/trackPlots/RDataFiles")){
+  dir.create("trackOrderedPlots/trackPlots/RDataFiles")
+}
+if(!file.exists("trackOrderedPlots/trackPlots/validation_images")){
+  dir.create("trackOrderedPlots/trackPlots/validation_images")
+}
+
+#plot tracks
+myHueBreaks <- as.numeric(quantile(allTrackDF$timeAfterExposure, c(seq(0.1:1, by = 0.2))))
+
+if(plotTracks[1] != FALSE){
+  
+  if( sum( plotTracks %in% unique(allTrackDF$location)) != length(plotTracks)){
+    stop(paste("could not find location defined in plotTracks: ", plotTracks[ !plotTracks %in% unique(allTrackDF$location)]))
+  }
+  
+  for (i in seq_along(plotTracks)){
+
+  
+  selallTrackDF <- allTrackDF[ allTrackDF$location == plotTracks[i],]
+forGraph <- data.frame(xCoord = selallTrackDF$value[ selallTrackDF$feature ==kColNames$trackingxCoordCN], 
+                       yCoord = selallTrackDF$value[ selallTrackDF$feature ==kColNames$trackingyCoordCN],
+                       timeAfterExposure = selallTrackDF$timeAfterExposure[selallTrackDF$feature ==kColNames$trackingxCoordCN],
+                       trackLabel = selallTrackDF$trackLabel[selallTrackDF$feature ==kColNames$trackingxCoordCN]
+                      
+                       )
+
+forGraph$trackLabel <- factor(forGraph$trackLabel)
+nTracks <- length(unique(forGraph$trackLabel))
+if(nTracks > nCellTrack){
+  theTracks<-unique(forGraph$trackLabel)
+  selTracks <- sample(theTracks, nCellTrack, replace = FALSE )
+  selTracks<-factor(selTracks)
+forGraph <- forGraph[ forGraph$trackLabel %in% selTracks, ]
+nTracks <- length(selTracks)
+
+}
+if(nTracks > 50){
+shape_tr <- c( c(1 : 25, 25:1) ,c(1 : 25, 25:1)[ 1: (nTracks - 50)])
+} else {
+  shape_tr <- c(1 : 25, 25:1) 
+}
+p <- ggplot(data = forGraph , aes( x = xCoord, y = yCoord  )  ) + ylim(imagePixel.y, 0) + xlim(0,imagePixel.x)   +
+              geom_point( size = 3, aes(alpha = timeAfterExposure, shape =  trackLabel, colour = trackLabel ),na.rm= TRUE  ) +
+  geom_path(  aes(alpha = timeAfterExposure, x=xCoord, y = yCoord, group = trackLabel, colour = trackLabel), na.rm=TRUE) +
+     scale_shape_manual( values = shape_tr )  +
+   scale_alpha(range = c(0.05, 1), breaks = myHueBreaks ) +
+  ggtitle( paste("tracks", plotTracks[i], sep ="_"))
+
+p <- p + theme(legend.direction = "horizontal", legend.position = "bottom", legend.box = "vertical")
+
+p <- p + guides(col = guide_legend(nrow = round(nTracks/10, 0))) + guides( shape = guide_legend(nrow= round(nTracks/10, 0)))
+
+
+
+# project the tracks on each image of corresponding set of images
+if( plotTrackProjections) {
+imageList <- paste(image.path, plotTracks[i], sep ="/")
+imageList <- dir(imageList)
+imageList <- imageList[grepl(grepTrackedChannel, imageList)]
+imageList <- imageList[1:nTPs]
+
+
+for( j in seq_along(imageList)) {
+
+    cur.image <- suppressWarnings(
+      readImage(files = paste(image.path, plotTracks[i], imageList[j], sep ="/"), type = "tiff")
+    )
+ #display(64*cur.image, method = 'raster')
+    
+    
+    cur.image <- imageData(cur.image)
+ 
+    # add all tracks on each image. multiply value by tp / max(tp)
+    #head(forGraph)
+    forGraph <- na.omit(forGraph)
+    forGraph$xCoord <- round(forGraph$xCoord, digits = 0)
+    forGraph$yCoord <- round(forGraph$yCoord, digits = 0)
+    
+    xCoords = 1:imagePixel.x
+    yCoords = 1:imagePixel.y
+    
+    buffertrack <- expand.grid( xCoords, yCoords)
+    colnames(buffertrack) <-c("xCoord", "yCoord")
+    
+    
+    forGraphsw <- forGraph
+    # forGraphsw$xCoord <- 513 - forGraphsw$xCoord
+   # forGraphsw$yCoord <- 513 - forGraphsw$yCoord
+    #colnames(forGraphsw)[1:2] <- c("yCoord", "xCoord")
+    mergedTrack <- merge(buffertrack, forGraphsw, by = c("xCoord", "yCoord"), all.x = TRUE)
+    
+    #head(mergedTrack)
+    mergedTrack$intensity <- 1
+    mergedTrack$intensity <- mergedTrack$intensity * mergedTrack$timeAfterExposure/ max(mergedTrack$timeAfterExposure, na.rm=TRUE)  # scale intensity based on time points
+    
+    
+    
+    
+    mergedTrackWide <- dcast( data = mergedTrack,  xCoord~yCoord, value.var = "intensity", fun.aggregate = function(x) mean(x, na.rm = TRUE))
+    
+    mergedTrackWide[is.na(mergedTrackWide)] <- 0
+    mergedTrackWide$yCoord <- NULL
+    track.image <- cur.image # dummy
+    
+    mergedTrackWide <- as.matrix(mergedTrackWide)
+    
+    # convMatrix <- diag(imagePixel.y)
+    # 
+    # addTop <- diag(1, imagePixel.y+1, imagePixel.y)
+    # addTop <- addTop[-1,]
+    # 
+    # addTop2 <- diag(1, imagePixel.y+2, imagePixel.y)
+    # addTop <- addTop + addTop2[-(1:2),]
+    # 
+    # addTop3 <- diag(1, imagePixel.y+3, imagePixel.y)
+    # addTop <- addTop +addTop3[-(1:3),]
+    # 
+    # addTop4 <- diag(1, imagePixel.y+4, imagePixel.y)
+    # addTop <- addTop +addTop4[-(1:4),]
+    # 
+    # addBottom <- diag(1, imagePixel.y, imagePixel.y+1)
+    # addBottom <- addBottom[,-1]
+    # 
+    # addBottom2 <- diag(1, imagePixel.y+2, imagePixel.y)
+    # addBottom <-addBottom + addBottom2[-(1:2),]
+    # 
+    # addBottom3 <- diag(1, imagePixel.y+3, imagePixel.y)
+    # addBottom <- addBottom +addBottom3[-(1:3),]
+    # 
+    # addBottom4 <- diag(1, imagePixel.y+4, imagePixel.y)
+    # addBottom <- addBottom +addBottom4[-(1:4),]
+    # 
+    # convMatrix <- convMatrix + addTop
+    # convMatrix <- convMatrix + addBottom
+    # 
+    mergedTrackWideConv <- mergedTrackWide
+    
+    #ls("package:EBImage")
+    for( k in 1:nrow(forGraph)) {
+    buffer <- drawCircle(img = mergedTrackWide, x = forGraph$xCoord[k], y = forGraph$yCoord[k], radius = 3, col = 256 )
+    
+    imageData(mergedTrackWideConv) <-  imageData(mergedTrackWideConv) + buffer
+    
+    }
+    
+    #display(mergedTrackWideConv, method = "raster")
+    
+    
+    #mergedTrackWideConv <-  mergedTrackWide[, -(imagePixel.y+1)] %*% convMatrix 
+    #mergedTrackWideConv <- mergedTrackWide
+    
+    imageData(track.image) <- mergedTrackWideConv
+    #display(mergedTrackWideConv, method = "raster")
+    # display(100*cur.image, method = "raster")
+   #display(track.image, method = "raster")
+   #dim(cur.image)
+   #dim(track.image)
+    
+   cur.track.image <- rgbImage(blue = 32*cur.image, red = track.image[, -(imagePixel.y+1)])
+   # display(cur.track.image, method = "raster")
+    
+    writeImage(x = cur.track.image, files =  paste0("trackOrderedPlots/trackPlots/validation_images/", imageList[j], ".png")) 
+  
+      
+} # j-loop
+      
+
+}
+pdf(file =  paste0("trackOrderedPlots/trackPlots/", plotTracks[i], ".pdf"), height = 20, width = 22) 
+  print(p)
+  dev.off()
+        
+       
+
+} # i -loop
+
+ls("package:EBImage")
+
+
+
+}
+closeAllConnections()
+
+# ook nog MotilityLab voor visualizatie gebruiken
+# duidelijker als 20 tracks kies 
+
+
+```
