@@ -225,6 +225,7 @@ fixTrackingFun <- function(myDFstukkie, myFeatures, i, kColNames, uniqueWellGrou
     # select features, and store them in seperate data.frames, store each dataframe in entries of list
     singleFeatList = list()
     myFeatures <- myFeatures[myFeatures!=trackingDistanceTraveledCN]
+    myFeatures <- myFeatures[myFeatures!=trackingObjectNumberCN]
     for(greppenCount in seq_along(myFeatures))
     {
       
