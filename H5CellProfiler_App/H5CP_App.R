@@ -4,7 +4,6 @@
 
 library(shiny)
 library(shinyBS)
-library(shinyFiles)
 library(shinyTime)
 library(DT)
 library(parallel)
@@ -34,10 +33,13 @@ ui <- shinyUI(fluidPage(
    sidebarLayout(
      sidebarPanel(
        h3("General settings"),
-       shinyDirButton("input_directory", "Set input directory...", "Select input directory"),
-       verbatimTextOutput('input_directory'),
-       shinyDirButton("output_directory", "Set output directory...", "Select output directory"),
-       verbatimTextOutput('output_directory'),
+
+       tags$label(`for` = "used_input_directory", "Input directory:"),
+       verbatimTextOutput('used_input_directory'),
+       textInput("input_directory", "Override input directory:", ""),
+       tags$label(`for` = "used_output_directory", "Output directory:"),
+       verbatimTextOutput('used_output_directory'),
+       textInput("output_directory", "Override output directory:", ""),
 
        sliderInput("cores", "CPU cores to use:",
                    min=1, max=max_cores, value=max_cores, step=1, post = " cores"),
@@ -66,42 +68,36 @@ ui <- shinyUI(fluidPage(
 
 getServer <- function(input.dir) {
   shinyServer(function(input, output, session) {
-    roots <- getVolumes()
 
-    shinyDirChoose(input, 'input_directory', session=session, roots = roots)
-    shinyDirChoose(input, 'output_directory', session=session, roots = roots)
-
-    inputDirShinyFiles  <- reactive({
-      if(is.null(input$input_directory)) {
+    inputDirTextInput  <- reactive({
+      if(input$input_directory == "") {
         return(NULL)
       }
-      return(parseDirPath(roots, input$input_directory))
+      print(input$input_directory)
+      return(input$input_directory)
     })
-    outputDirShinyFiles <- reactive({
-      if(is.null(input$output_directory)) {
+    outputDirTextInput  <- reactive({
+      if(input$output_directory == "") {
         return(NULL)
       }
-      return(parseDirPath(roots, input$output_directory))
+      return(input$output_directory)
     })
 
     inputDirectory <- reactive({
-      if(is.null(inputDirShinyFiles())) {
+      if(is.null(inputDirTextInput())) {
         return(input.dir)
       }
-      return(inputDirShinyFiles())
+      return(inputDirTextInput())
     })
     outputDirectory <- reactive({
-      if(!is.null(outputDirShinyFiles())) {
-        return(outputDirShinyFiles())
+      if(!is.null(outputDirTextInput())) {
+        return(outputDirTextInput())
       }
-      if(!is.null(inputDirectory())) {
-        return(file.path(inputDirectory(), "H5CP_output"))
-      }
-      return(NULL)
+      return(file.path(inputDirectory(), "H5CP_output"))
     })
-
-    output$input_directory <- renderText(inputDirectory())
-    output$output_directory <- renderText(outputDirectory())
+    
+    output$used_input_directory <- renderText(inputDirectory())
+    output$used_output_directory <- renderText(outputDirectory())
 
     extractHDF5_config  <- callModule(extractHDF5, "extract_hdf5_1", inputDirectory)
     tracking_config <- callModule(tracking, "tracking1")

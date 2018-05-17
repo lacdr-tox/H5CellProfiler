@@ -16,7 +16,7 @@ findScriptPath <- function(){
 
 # Function to install the pipeline dependencies
 installDependencies <- function(){
-  installPackages(c('docopt', 'shiny', 'shinyBS', 'shinyFiles', 'shinyTime', 'DT', 'parallel', 'yaml'))
+  installPackages(c('docopt', 'shiny', 'shinyBS', 'shinyTime', 'DT', 'parallel', 'yaml'))
   installBiocLitePackages(c('rhdf5'))
 }
 
