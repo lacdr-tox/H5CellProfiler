@@ -1,12 +1,8 @@
 
-# Application breaking bug :(
-# https://github.com/rstudio/shiny/issues/1244
-
-library(shiny)
-library(shinyBS)
-library(shinyTime)
-library(DT)
-library(parallel)
+# check if pacman (package manager) is installed
+if (!require("pacman")) install.packages("pacman"); library(pacman)
+# install the app dependencies
+p_load('shiny', 'shinyBS', 'shinyTime', 'DT', 'parallel', 'yaml', 'rhdf5', 'htmltools')
 
 source("../utils/cphdf5.R")
 source("utils.R")
@@ -14,7 +10,7 @@ source("trackingModule.R")
 source("extractHDF5Module.R")
 
 
-app_version <- "0.1.0"
+app_version <- "0.1.1"
 modules <- c("extract-hdf5", "tracking")
 module_labels <- c("extract-hdf5" = "Extract HDF5", "tracking" = "Tracking")
 default_modules <- c("extract-hdf5")
