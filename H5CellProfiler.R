@@ -9,17 +9,10 @@ source("countCellFun.R")
 source("shinyAppUI.R")
 source("shinyAppServer.R")
 
-library(rhdf5)
-library(stringr)
-library(plyr)
-library(data.table)
-library(doParallel)
-library(ggplot2)
-library(reshape2)
-library(grid)
-library(shiny)
-library(ggvis)
-library(yaml)
+if (!require("pacman")) install.packages("pacman"); library(pacman)
+p_load('docopt', 'stringr', 'plyr', 'data.table', 'doParallel', 'ggplot2', 
+       'reshape2', 'grid', 'shiny', 'ggvis', 'yaml', 'rmarkdown', 'git2r', 
+       'evaluate','rhdf5')
 
 prependInputDirectoryToPath <- function (config) {
   config$modules$`extract-hdf5`$input$hdf5 <-

@@ -50,7 +50,6 @@ trackingUI <- function(id) {
                 choices = reconnect_over_frames,
                 selected = default_reconnect_over_frames,
                 width = full_width),
-    bsAlert(ns("reconnect_slider_alert")),
     uiOutput(ns("reconnect_distance")),
     h4("Discard short tracks"),
     helpText(HTML("This setting sets the minimum desired track length, tracks that have a shorter
@@ -87,13 +86,8 @@ tracking <- function(input, output, session){
     post <- " pixels"
     pre_label <- "Maximal distance for reconnecting over"
     if(input$reconnect_over_frames == 0) {
-      closeAlert(session, "reconnect_slider_alert")
       return(NULL)
     }
-    createAlert(session, ns("reconnect_slider_alert"), "reconnect_slider_alert",
-                content = HTML("<strong>Warning</strong> Because of a bug in Shiny these sliders
-                               can reset when you change the directories in the left panel."),
-                style = "warning", dismiss = FALSE)
 
     tags <- list()
     if(input$reconnect_over_frames > 0) {
