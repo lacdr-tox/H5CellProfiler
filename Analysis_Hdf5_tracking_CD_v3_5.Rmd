@@ -1,11 +1,12 @@
-author: Steven Wink
-email steven.wink@gmail.com / s.wink.3@lacdr.leidenuniv.nl
+author: Steven Wink, Gerhard Burger
 
 changelog
 
 version 2_3: tracking data reorganization (unique parents and linking broken tracks complete)
 reformat script h5 file CellProfiler
 version 3_3: ?
+version 3_4: ?
+version 3_5: GB: start splitting up code into managable parts (see also H5CellProfiler.R) 
 -----------
 
 
