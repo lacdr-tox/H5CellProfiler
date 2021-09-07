@@ -9,9 +9,9 @@ mainFunction <- function(  hdf5FileNameL=hdf5FileNameL,locationID=locationID, ti
                            oscillation=oscillation, 
                            writeSingleCellDataPerWell=writeSingleCellDataPerWell, 
                            writeAllSingleCellData=writeAllSingleCellData, h5loop=h5loop,
-                           timeBetweenFrames = timeBetweenFrames, exposureDelay = exposureDelay) {
+                           timeBetweenFrames = timeBetweenFrames, exposureDelay = exposureDelay,
+                           numberCores = numberCores) {
 
-  
   #h5loop=1
   hdf5FileName <- hdf5FileNameL[h5loop]
   # metadata can be manualy defined by user per h5 file, or a single or per h5 file a h5 path
@@ -361,6 +361,13 @@ myDFrawImage <-myDFrawImage[currImageData]
 metaCSVData <- read.table( plateMDFileName, sep = "\t", header = TRUE, comment.char = "")
 metaCSVData<- as.data.table(metaCSVData)
 metaCSVData[, plateID:= as.character(plateID)]
+
+expectedColumns <- c('locationID', 'treatment', 'dose_uM', 'control', 'cell_line', 'plateID', 'timeID', 'replID')
+if(!all(colnames(metaCSVData) %in% expectedColumns)) {
+  stop(paste('wrong columns in layout file\n\texpected: ', paste(sort(expectedColumns), collapse = ", "),
+             "\n\t     got: ", paste(sort(colnames(metaCSVData)), collapse = ", "), '\n'))
+}
+
 setkey(metaCSVData, 'treatment')
 
 # only use data that is defined in metadata layout file, in treatment column
@@ -369,8 +376,9 @@ metaCSVData <- metaCSVData[ !"0" ]
 metaCSVData <- metaCSVData[ !0 ]
 metaCSVData <- metaCSVData[ !is.na(locationID),]
 
-# make sure that locationId is a character to avoid failing match later on
+# make sure that locationId and plateID are character to avoid failing match later on
 metaCSVData <- metaCSVData[, locationID:=as.character(locationID)]
+metaCSVData <- metaCSVData[, plateID:=as.character(plateID)]
 
 if ( length(metaCSVData$treatment) != length(metaCSVData$dose_uM[metaCSVData$dose_uM!="" & !is.na(metaCSVData$dose_uM)]) ){
   stop("Some treatments did not have valid concentration in metadata file")

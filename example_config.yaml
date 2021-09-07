@@ -1,0 +1,65 @@
+---
+io:
+  # where your hdf5 and layout file are
+  input-directory: "/home/gerhard/test/yaml_r"
+  # where you want the output from the script
+  output-directory: "/home/gerhard/test/yaml_r/H5CP_output"
+# select which modules to run
+run:
+  - extract-hdf5
+  - tracking
+# number of cpu cores to use    
+cores: 16
+# module configuration
+modules:
+  # extract information from hdf5 (block 1)
+  extract-hdf5:
+    show-results: TRUE
+    input:
+      hdf5:
+        - "20160403_GB01_03_cp_output_hcc38.h5"
+      layout: "20160401_GB01_03_layout.tsv"
+    metadata:
+      location-id:
+        - "Image/Metadata_well_name"
+      plate-id:
+        - "20121120_hs"
+      image-id:
+        - "Image/Metadata_well_name"
+      time-id:
+        - "Image/Metadata_Time"
+      replicate-id: []
+      exposure-delay:
+        - "00:00"
+      time-between-frame:
+        - "00:06:00"
+      objects:
+        parent-object: "obj_cell"
+        # child-objects: use [] for no objects, otherwise use - on the next line (like in features)
+        child-objects: []
+        tertiary-object:
+      # features: #do not define displacement and parent object, these are automatically included
+      features:
+        - "obj_cell/Intensity_MeanIntensity_raw_img_nuclei_cropped"
+        - "obj_cell/TrackObjects_Displacement_30"
+        - "obj_cell/TrackObjects_DistanceTraveled_30"
+        - "obj_cell/TrackObjects_IntegratedDistance_30"
+        - "obj_cell/TrackObjects_Linearity_30"
+  # tracking module (block 4)
+  tracking:
+    reconnect-tracks: true
+    reconnect-over-frames: 2
+    max-pixel-reconnect:
+      - 20
+      - 20
+      - 20
+    min-tracked-frames: 20
+    # Can be "disconnect_all" (recommended) or "min_distance"
+    parent-resolve-strategy: "disconnect_all"
+    write:
+      unique-parents-no-rec: true
+      before-combine-tracks: true
+      after-first-connect: true
+      after-second-connect: true
+      after-third-connect: true
+...

@@ -3,155 +3,155 @@
 
 all.treats <- (unique(myDFo$treatment))
 ids <- colnames(myDFo)
-facLevels <- c("treatment","plateID",  "dose_uM", "timeID", 
-               "controlID", "replID", "locationID", "control", 
+facLevels <- c("treatment","plateID",  "dose_uM", "timeID",
+               "controlID", "replID", "locationID", "control",
                "cell_line", "imageID", "plateWellID", "timeAfterExposure", kColNames$parentObjectNumberCN)
 sumLevels <- colnames(myDFo)
 
-shinyUI(fluidPage( 
+shinyUI(fluidPage(
   titlePanel("CellProfiler h5 GUI"),
-  
+
   sidebarLayout(
-    
+
     sidebarPanel(
-      
-      
-helpText("Create summary statistics and make 
+
+
+      helpText("Create summary statistics and make
          interactive plots of CP generated hdf5 data."),
 
-      selectInput("idsChoice", 
+      selectInput("idsChoice",
                   label = "Choose variables for analysis",
                   choices = c(colnames(myDFo), colnames(sumData)),
                   selected = myFeatures[1],
                   width = "auto",
                   multiple = TRUE
-                  ),
-      
-      selectInput("summFunChoice", 
+      ),
+
+      selectInput("summFunChoice",
                   label = "Summary Function:",
                   choices = c("mean", "sd", "sum", "median", "q10", "q90","min","max"),
-                  
-                  ),
-      
-      selectInput("by.what", 
+
+      ),
+
+      selectInput("by.what",
                   label = "Summary by what:",
                   choices = sumLevels,  #facLevels   This is confusing for user as  facLevels need not be in data
                   multiple = TRUE,
                   selected = c("treatment", "timeID", "dose_uM", "plateID")
-                  ),
-actionButton("goButton", "Calculate summary"),
+      ),
+      actionButton("goButton", "Calculate summary"),
 
 
 
-selectInput("normalization",
-            label = "plate normalization method, by display variable:",
-            choices = c("MinMax", "Median", "Z-Score")
-            ),
-textInput("negativeControl",
-          label= "negative control string for z-score:",
-          value = ""),
-actionButton("goButton9", "normalize plates"),
+      selectInput("normalization",
+                  label = "plate normalization method, by display variable:",
+                  choices = c("MinMax", "Median", "Z-Score")
+      ),
+      textInput("negativeControl",
+                label= "negative control string for z-score:",
+                value = ""),
+      actionButton("goButton9", "normalize plates"),
       selectInput("nomiCol",
                   label = "nominator column:",
                   choices = colnames(myDFo),
                   width = "auto"
-                  ),
+      ),
       selectInput("denomiCol",
-            label = "denominator column:",
-            choices = colnames(myDFo),
-            width = "auto"
-            
-                  ),
+                  label = "denominator column:",
+                  choices = colnames(myDFo),
+                  width = "auto"
+
+      ),
       sliderInput("kAddDenom",
-            label = "denominator addition by mean multiplier:",
-            value = 0,
-            min = 0,
-            max = 0.05,
-            step = 0.001
-                  ),
-actionButton("goButton3", "Calculate division"),
-      
-selectInput("rmCol",
-            label = "remove column:",
-            choices = colnames(myDFo),
-            width = "auto"), 
+                  label = "denominator addition by mean multiplier:",
+                  value = 0,
+                  min = 0,
+                  max = 0.05,
+                  step = 0.001
+      ),
+      actionButton("goButton3", "Calculate division"),
 
-actionButton("goButton2", "remove column!"),
+      selectInput("rmCol",
+                  label = "remove column:",
+                  choices = colnames(myDFo),
+                  width = "auto"),
 
-selectInput("filtCol",
-            label = "column to filter, count or select:",
-            choices = colnames(myDFo),
-            width = "auto"), 
-textInput("opera",
-            label = "> or < (keep/count):"), 
-textInput("filtVal",
-          label = "filter value"),
-actionButton("goButton6", "filter column"),
-actionButton("goButton8", "count data"),
-actionButton("goButton11", "select data"),
-checkboxInput("naIsZero", "count NA is zero", value = TRUE),
-textInput("ncolName",
-          label = "new column name",
-          value = ""
-          ),
+      actionButton("goButton2", "remove column!"),
 
-
-textInput("path",
-          label = "path to Rdata file"),      
-
-actionButton("goButton4", "table preview"),
-actionButton("goButton5", "update variables"),
-actionButton("goButton7", "reload Data"),
-actionButton("button10", "show barD"),
-
-#actionButton("goButton9", "NA is zero convert"),
+      selectInput("filtCol",
+                  label = "column to filter, count or select:",
+                  choices = colnames(myDFo),
+                  width = "auto"),
+      textInput("opera",
+                label = "> or < (keep/count):"),
+      textInput("filtVal",
+                label = "filter value"),
+      actionButton("goButton6", "filter column"),
+      actionButton("goButton8", "count data"),
+      actionButton("goButton11", "select data"),
+      checkboxInput("naIsZero", "count NA is zero", value = TRUE),
+      textInput("ncolName",
+                label = "new column name",
+                value = ""
+      ),
 
 
-      selectInput("dataset", "Choose a dataset:", 
+      textInput("path",
+                label = "path to Rdata file"),
+
+      actionButton("goButton4", "table preview"),
+      actionButton("goButton5", "update variables"),
+      actionButton("goButton7", "reload Data"),
+      actionButton("button10", "show barD"),
+
+      #actionButton("goButton9", "NA is zero convert"),
+
+
+      selectInput("dataset", "Choose a dataset:",
                   choices = c("Single Cell", "Summary Data"),
                   selected = "Summary Data"),
-      
-          downloadButton('downloadData', 'Download')
-          
+
+      downloadButton('downloadData', 'Download')
+
 
     ),
 
     mainPanel(
       #SummaryData
-      
+
       tabsetPanel(
         tabPanel("Calculate Summary", tableOutput("SummaryData"),
-                 "Normalization (use by what)", tableOutput("tempData")), 
-        
-                # this panel is for very basic choosing a treatment and plotting & serves as template for further functionality
+                 "Normalization (use by what)", tableOutput("tempData")),
+
+        # this panel is for very basic choosing a treatment and plotting & serves as template for further functionality
         tabPanel("plot", ggvisOutput("gv"),
-                 selectInput("currTreat", 
+                 selectInput("currTreat",
                              label = "Choose treatment to plot:",
                              choices = all.treats),
-                 
-                 selectInput("xVar", 
+
+                 selectInput("xVar",
                              label = "Choose x-axis variable:",
                              choices = colnames(sumData),
                              selected = "timeID"
-                             ),
-                 
-                 selectInput("yVar", 
+                 ),
+
+                 selectInput("yVar",
                              label = "Choose y-axis variable from summaryData:",
                              choices = colnames(sumData)
-                             ),
-                 selectInput("mapCol", 
+                 ),
+                 selectInput("mapCol",
                              label = "color mapping:",
                              choices = colnames(sumData))
-                 ),
-        #This panel is for plotting all treatments in a single pdf. 
-        
-        tabPanel("plotAll", 
-                 checkboxGroupInput("plotType", label = "Choose plot type, for multiple variables make sure to map \"variable\\", 
+        ),
+        #This panel is for plotting all treatments in a single pdf.
+
+        tabPanel("plotAll",
+                 checkboxGroupInput("plotType", label = "Choose plot type, for multiple variables make sure to map \"variable\\",
                                     choices = c("line plot", "bar plot"),
                                     selected ="line plot"),
                  selectInput("collapse", label = "AUC collapse (barplot only):",
                              choices = colnames(sumData)),
-                 
+
                  selectInput("onXaxis", label = "display on x axis:",
                              choices = colnames(sumData)),
                  selectInput("facets", label = "choose facetting variable(s)",
@@ -160,7 +160,7 @@ actionButton("button10", "show barD"),
                  selectInput("Color", label ="color mapping",
                              choices = c( " " ,colnames(sumData),"variable"),
                              selected = "plateID"
-                             ),
+                 ),
                  selectInput("fill", label ="fill mapping",
                              choices = c( " " ,colnames(sumData),"variable")
                  ),
@@ -182,13 +182,13 @@ actionButton("button10", "show barD"),
                  textInput("resY", "choose pdf height", value = 20),
                  textInput("textSize", "choose text size", value = 15),
                  actionButton("goButton12", "make dose levels"),
-                
-                 
+
+
                  downloadButton('downloadPlot', 'downloadPlot')
-                 ),
+        ),
         tabPanel("myTable preview", tableOutput("myTable"),tableOutput("barD"))
-                  ) ##TODO more panels will be included: AUC/bar plots. Binning plots. Tracking plots - add some usefull plots from older code.
-      )
+      ) ##TODO more panels will be included: AUC/bar plots. Binning plots. Tracking plots - add some usefull plots from older code.
+    )
   )
 
 ))
