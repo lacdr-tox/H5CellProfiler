@@ -2,11 +2,15 @@
 
 <!-- badges: start -->
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5484400.svg)](https://doi.org/10.5281/zenodo.5484400)
+[![bioRxiv:10.1101/2022.10.06.511212](http://img.shields.io/badge/bioRxiv-10.1101/2022.10.06.511212-B31B1B.svg)](https://doi.org/10.1101/2022.10.06.511212)
 <!-- badges: end -->
 
-Data analysis and graphics package with a browser based GUI. Functions as interface for the HDF5-format output from the open source image-analysis tool CellProfiler
+Data analysis and graphics package* with a browser based GUI. Functions as interface for the HDF5-format output from the open source image-analysis tool CellProfiler.
 
-Note: not installable/ packageable yet
+Described in more detail in:   
+> Wink, S., Burger, G. A., Le Dévédec, S. E., Beltman, J. B., & van de Water, B. (2022). User-friendly high-content imaging analysis on a single desktop: R package H5CellProfiler. bioRxiv. https://doi.org/10.1101/2022.10.06.511212
+
+*Note: not installable/ packageable yet
 
 ## H5CellProfiler bat versions (Windows only)
 
